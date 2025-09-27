@@ -1,7 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -42,14 +42,7 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-      fetchTradingStats();
-    }
-  }, [user]);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       console.log('Fetching profile for user:', user?.id);
       const { data, error } = await supabase
@@ -87,9 +80,9 @@ export default function ProfileScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id, user?.email]);
 
-  const fetchTradingStats = async () => {
+  const fetchTradingStats = useCallback(async () => {
     try {
       const { data: trades, error } = await supabase
         .from('trades')
@@ -101,28 +94,61 @@ export default function ProfileScreen() {
         return;
       }
 
-      // Calculate trading statistics
+      // Calculate trading statistics from real data
       const totalTrades = trades?.length || 0;
       const closedTrades = trades?.filter(trade => trade.status === 'closed') || [];
       const winningTrades = closedTrades.filter(trade => (trade.pnl || 0) > 0);
       const winRate = closedTrades.length > 0 ? (winningTrades.length / closedTrades.length) * 100 : 0;
       const totalPnl = closedTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
       
-      // Mock data for demonstration
+      // Calculate best month from closed trades
+      const monthlyPnl = closedTrades.reduce((acc, trade) => {
+        if (trade.exit_date) {
+          const month = new Date(trade.exit_date).toISOString().substring(0, 7); // YYYY-MM
+          acc[month] = (acc[month] || 0) + (trade.pnl || 0);
+        }
+        return acc;
+      }, {} as Record<string, number>);
+      
+      const bestMonth = Object.values(monthlyPnl).length > 0 
+        ? Math.max(...Object.values(monthlyPnl).map(v => Number(v))) 
+        : 0;
+      
+      // Calculate average trade size
+      const avgTradeSize = trades?.length > 0 
+        ? trades.reduce((sum, trade) => sum + (trade.quantity * trade.price), 0) / trades.length 
+        : 0;
+      
+      // Calculate risk score based on PnL volatility
+      const pnlValues = closedTrades.map(trade => trade.pnl || 0);
+      const avgPnl = pnlValues.length > 0 ? pnlValues.reduce((sum, pnl) => sum + pnl, 0) / pnlValues.length : 0;
+      const variance = pnlValues.length > 0 
+        ? pnlValues.reduce((sum, pnl) => sum + Math.pow(pnl - avgPnl, 2), 0) / pnlValues.length 
+        : 0;
+      const riskScore = Math.min(10, Math.max(1, Math.sqrt(variance) / 100)); // Scale to 1-10
+
       const stats: TradingStats = {
         totalTrades,
         winRate,
         totalPnl,
-        bestMonth: 2450.00,
-        avgTradeSize: 1250,
-        riskScore: 7.2,
+        bestMonth,
+        avgTradeSize,
+        riskScore,
       };
 
+      console.log('Trading stats calculated:', stats);
       setTradingStats(stats);
     } catch (error) {
       console.error('Error in fetchTradingStats:', error);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+      fetchTradingStats();
+    }
+  }, [user, fetchProfile, fetchTradingStats]);
 
   const handleSave = async () => {
     if (!profile) return;
@@ -317,49 +343,85 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            {/* Trading Statistics Card */}
-            <View style={styles.statsCard}>
-              <Text style={styles.cardTitle}>Trading Statistics</Text>
-              
-              <View style={styles.statsGrid}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>Total Trades</Text>
-                  <Text style={styles.statValue}>{tradingStats?.totalTrades || 0}</Text>
-                  <Text style={styles.statSubtext}>This year</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>Win Rate</Text>
-                  <Text style={styles.statValue}>{tradingStats?.winRate.toFixed(1) || 0}%</Text>
-                  <Text style={styles.statSubtext}>Above average</Text>
-                </View>
-              </View>
+                {/* Trading Statistics Card */}
+                {tradingStats && tradingStats.totalTrades > 0 ? (
+                  <View style={styles.statsCard}>
+                    <Text style={styles.cardTitle}>Trading Statistics</Text>
 
-              <View style={styles.statsGrid}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>Total P&L</Text>
-                  <Text style={styles.statValue}>${tradingStats?.totalPnl.toFixed(2) || '0.00'}</Text>
-                  <Text style={styles.statSubtext}>All time</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>Best Month</Text>
-                  <Text style={styles.statValue}>${tradingStats?.bestMonth.toFixed(2) || '0.00'}</Text>
-                  <Text style={styles.statSubtext}>October 2024</Text>
-                </View>
-              </View>
+                    <View style={styles.statsGrid}>
+                      <View style={styles.statItem}>
+                        <Text style={styles.statLabel}>Total Trades</Text>
+                        <Text style={styles.statValue}>{tradingStats.totalTrades}</Text>
+                        <Text style={styles.statSubtext}>All time</Text>
+                      </View>
+                      <View style={styles.statItem}>
+                        <Text style={styles.statLabel}>Win Rate</Text>
+                        <Text style={styles.statValue}>{tradingStats.winRate.toFixed(1)}%</Text>
+                        <Text style={styles.statSubtext}>
+                          {tradingStats.winRate >= 60 ? 'Excellent' : 
+                           tradingStats.winRate >= 50 ? 'Good' : 
+                           tradingStats.winRate >= 40 ? 'Average' : 'Below average'}
+                        </Text>
+                      </View>
+                    </View>
 
-              <View style={styles.statsGrid}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>Avg. Trade Size</Text>
-                  <Text style={styles.statValue}>${tradingStats?.avgTradeSize || 0}</Text>
-                  <Text style={styles.statSubtext}>Position sizing</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statLabel}>Risk Score</Text>
-                  <Text style={styles.statValue}>{tradingStats?.riskScore}/10</Text>
-                  <Text style={styles.statSubtext}>Moderate risk</Text>
-                </View>
-              </View>
-            </View>
+                    <View style={styles.statsGrid}>
+                      <View style={styles.statItem}>
+                        <Text style={styles.statLabel}>Total P&L</Text>
+                        <Text style={[
+                          styles.statValue, 
+                          tradingStats.totalPnl >= 0 ? styles.profitText : styles.lossText
+                        ]}>
+                          ${tradingStats.totalPnl.toFixed(2)}
+                        </Text>
+                        <Text style={styles.statSubtext}>All time</Text>
+                      </View>
+                      <View style={styles.statItem}>
+                        <Text style={styles.statLabel}>Best Month</Text>
+                        <Text style={[
+                          styles.statValue,
+                          tradingStats.bestMonth >= 0 ? styles.profitText : styles.lossText
+                        ]}>
+                          ${tradingStats.bestMonth.toFixed(2)}
+                        </Text>
+                        <Text style={styles.statSubtext}>Best performing month</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.statsGrid}>
+                      <View style={styles.statItem}>
+                        <Text style={styles.statLabel}>Avg. Trade Size</Text>
+                        <Text style={styles.statValue}>${tradingStats.avgTradeSize.toFixed(0)}</Text>
+                        <Text style={styles.statSubtext}>Position sizing</Text>
+                      </View>
+                      <View style={styles.statItem}>
+                        <Text style={styles.statLabel}>Risk Score</Text>
+                        <Text style={[
+                          styles.statValue,
+                          tradingStats.riskScore <= 3 ? styles.lowRiskText :
+                          tradingStats.riskScore <= 7 ? styles.mediumRiskText : styles.highRiskText
+                        ]}>
+                          {tradingStats.riskScore.toFixed(1)}/10
+                        </Text>
+                        <Text style={styles.statSubtext}>
+                          {tradingStats.riskScore <= 3 ? 'Low risk' :
+                           tradingStats.riskScore <= 7 ? 'Medium risk' : 'High risk'}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.statsCard}>
+                    <Text style={styles.cardTitle}>Trading Statistics</Text>
+                    <View style={styles.emptyStatsContainer}>
+                      <Text style={styles.emptyStatsIcon}>📊</Text>
+                      <Text style={styles.emptyStatsTitle}>No Trades Yet</Text>
+                      <Text style={styles.emptyStatsMessage}>
+                        Start tracking your trades to see detailed statistics and performance metrics here.
+                      </Text>
+                    </View>
+                  </View>
+                )}
           </View>
 
           {/* Sign Out Button */}
@@ -602,5 +664,44 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Empty stats styles
+  emptyStatsContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  emptyStatsIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  emptyStatsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#F8FAFC',
+    marginBottom: 8,
+  },
+  emptyStatsMessage: {
+    fontSize: 14,
+    color: '#94A3B8',
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 16,
+  },
+  // Profit/Loss text colors
+  profitText: {
+    color: '#10B981', // Green for profits
+  },
+  lossText: {
+    color: '#EF4444', // Red for losses
+  },
+  // Risk level colors
+  lowRiskText: {
+    color: '#10B981', // Green for low risk
+  },
+  mediumRiskText: {
+    color: '#F59E0B', // Yellow for medium risk
+  },
+  highRiskText: {
+    color: '#EF4444', // Red for high risk
   },
 });
