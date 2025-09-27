@@ -93,7 +93,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#0F172A',
   },
   scrollView: {
     flex: 1,
@@ -111,10 +111,10 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#111827',
+    color: '#F8FAFC',
   },
   emailText: {
-    color: '#6B7280',
+    color: '#94A3B8',
   },
   signOutButton: {
     backgroundColor: '#EF4444',
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   statCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1E293B',
     borderRadius: 12,
     padding: 16,
     flex: 1,
@@ -141,9 +141,9 @@ const styles = StyleSheet.create({
       width: 0,
       height: 1,
     },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.3,
     shadowRadius: 2,
-    elevation: 1,
+    elevation: 3,
   },
   statCardLeft: {
     marginRight: 8,
@@ -152,21 +152,21 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   statLabel: {
-    color: '#6B7280',
+    color: '#94A3B8',
     fontSize: 14,
     marginBottom: 4,
   },
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#111827',
+    color: '#F8FAFC',
   },
   statChange: {
     color: '#10B981',
     fontSize: 14,
   },
   statSubtext: {
-    color: '#6B7280',
+    color: '#94A3B8',
     fontSize: 14,
   },
   quickActions: {
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#111827',
+    color: '#F8FAFC',
     marginBottom: 16,
   },
   actionButtons: {
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   blueButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#3B82F6',
   },
   greenButton: {
     backgroundColor: '#10B981',
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   emptyState: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1E293B',
     borderRadius: 12,
     padding: 24,
     shadowColor: '#000',
@@ -212,16 +212,16 @@ const styles = StyleSheet.create({
       width: 0,
       height: 1,
     },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.3,
     shadowRadius: 2,
-    elevation: 1,
+    elevation: 3,
   },
   emptyStateText: {
-    color: '#6B7280',
+    color: '#94A3B8',
     textAlign: 'center',
   },
   emptyStateSubtext: {
-    color: '#9CA3AF',
+    color: '#64748B',
     textAlign: 'center',
     fontSize: 14,
     marginTop: 8,

@@ -5,6 +5,7 @@ import { Link, router } from 'expo-router';
 import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
+    ActivityIndicator,
     Alert,
     KeyboardAvoidingView,
     Platform,
@@ -18,11 +19,13 @@ import {
 
 export default function SignUpScreen() {
   const [loading, setLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const { signUp } = useAuth();
 
   const {
     control,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
@@ -36,16 +39,15 @@ export default function SignUpScreen() {
       if (error) {
         Alert.alert('Error', error.message);
       } else {
-        Alert.alert(
-          'Success',
-          'Please check your email for verification link',
-          [
-            {
-              text: 'OK',
-              onPress: () => router.replace('/signin'),
-            },
-          ]
-        );
+        // Show success message
+        setShowSuccess(true);
+        // Clear the form
+        reset();
+        // Hide success message after 3 seconds and redirect
+        setTimeout(() => {
+          setShowSuccess(false);
+          router.replace('/signin');
+        }, 3000);
       }
     } catch (error) {
       Alert.alert('Error', 'An unexpected error occurred');
@@ -53,6 +55,35 @@ export default function SignUpScreen() {
       setLoading(false);
     }
   };
+
+  if (showSuccess) {
+    return (
+      <View style={styles.successContainer}>
+        <View style={styles.successCard}>
+          <Text style={styles.successIcon}>✓</Text>
+          <Text style={styles.successTitle}>Account Created Successfully!</Text>
+          <Text style={styles.successMessage}>
+            Please check your email for a verification link. You'll be redirected to the login page shortly.
+          </Text>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="#3B82F6" />
+            <Text style={styles.loadingText}>Redirecting...</Text>
+          </View>
+          <View style={styles.successActions}>
+            <TouchableOpacity 
+              style={styles.loginButton}
+              onPress={() => {
+                setShowSuccess(false);
+                router.replace('/signin');
+              }}
+            >
+              <Text style={styles.loginButtonText}>Go to Login</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -171,7 +202,7 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#0F172A',
   },
   scrollView: {
     flex: 1,
@@ -188,12 +219,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: 'bold',
-    color: '#111827',
+    color: '#F8FAFC',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
-    color: '#6B7280',
+    color: '#94A3B8',
     textAlign: 'center',
   },
   form: {
@@ -203,26 +234,27 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    color: '#374151',
+    color: '#E2E8F0',
     fontWeight: '500',
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: '#334155',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    color: '#111827',
+    color: '#F8FAFC',
     fontSize: 16,
+    backgroundColor: '#1E293B',
   },
   errorText: {
-    color: '#EF4444',
+    color: '#F87171',
     fontSize: 14,
     marginTop: 4,
   },
   button: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#3B82F6',
     borderRadius: 8,
     paddingVertical: 12,
     marginTop: 24,
@@ -242,10 +274,79 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   footerText: {
-    color: '#6B7280',
+    color: '#94A3B8',
   },
   linkText: {
-    color: '#2563EB',
+    color: '#60A5FA',
     fontWeight: '600',
+  },
+  // Success screen styles
+  successContainer: {
+    flex: 1,
+    backgroundColor: '#0F172A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  successCard: {
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    maxWidth: 400,
+    width: '100%',
+  },
+  successIcon: {
+    fontSize: 64,
+    color: '#10B981',
+    marginBottom: 16,
+  },
+  successTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#F8FAFC',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  successMessage: {
+    color: '#94A3B8',
+    textAlign: 'center',
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 16,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  loadingText: {
+    color: '#3B82F6',
+    marginLeft: 8,
+    fontSize: 14,
+  },
+  successActions: {
+    width: '100%',
+  },
+  loginButton: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  loginButtonText: {
+    color: '#ffffff',
+    textAlign: 'center',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });

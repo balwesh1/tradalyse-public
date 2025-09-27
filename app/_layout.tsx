@@ -1,5 +1,6 @@
+import LoadingScreen from '@/components/LoadingScreen';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
@@ -15,11 +16,11 @@ function RootLayoutNav() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return null; // You can add a loading screen here
+    return <LoadingScreen />;
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={DarkTheme}>
       <Stack>
         {user ? (
           <>
@@ -34,7 +35,7 @@ function RootLayoutNav() {
           </>
         )}
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style="light" />
     </ThemeProvider>
   );
 }

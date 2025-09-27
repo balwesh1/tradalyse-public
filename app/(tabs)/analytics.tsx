@@ -1,17 +1,36 @@
 import React from 'react';
-import { SafeAreaView, Text, View } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
 
 export default function AnalyticsScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <View className="flex-1 justify-center items-center px-6">
-        <Text className="text-2xl font-bold text-gray-900 mb-4">
-          Analytics Dashboard
-        </Text>
-        <Text className="text-gray-600 text-center">
-          Trading analytics and insights will appear here
-        </Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.content}>
+        <Text style={styles.title}>Analytics Dashboard</Text>
+        <Text style={styles.subtitle}>Trading analytics and insights will appear here</Text>
       </View>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0F172A',
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#F8FAFC',
+    marginBottom: 16,
+  },
+  subtitle: {
+    color: '#94A3B8',
+    textAlign: 'center',
+  },
+});

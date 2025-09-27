@@ -34,12 +34,20 @@ export default function SignInScreen() {
       const { error } = await signIn(data.email, data.password);
       
       if (error) {
-        Alert.alert('Error', error.message);
+        // Handle specific error cases
+        if (error.message.includes('Invalid login credentials')) {
+          Alert.alert('Login Failed', 'Invalid email or password. Please check your credentials and try again.');
+        } else if (error.message.includes('Email not confirmed')) {
+          Alert.alert('Email Not Verified', 'Please check your email and click the verification link before signing in.');
+        } else {
+          Alert.alert('Error', error.message);
+        }
       } else {
+        // Success - user will be automatically redirected by the auth context
         router.replace('/(tabs)');
       }
     } catch (error) {
-      Alert.alert('Error', 'An unexpected error occurred');
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -137,7 +145,7 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#0F172A',
   },
   scrollView: {
     flex: 1,
@@ -154,12 +162,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: 'bold',
-    color: '#111827',
+    color: '#F8FAFC',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
-    color: '#6B7280',
+    color: '#94A3B8',
     textAlign: 'center',
   },
   form: {
@@ -169,26 +177,27 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    color: '#374151',
+    color: '#E2E8F0',
     fontWeight: '500',
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: '#334155',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    color: '#111827',
+    color: '#F8FAFC',
     fontSize: 16,
+    backgroundColor: '#1E293B',
   },
   errorText: {
-    color: '#EF4444',
+    color: '#F87171',
     fontSize: 14,
     marginTop: 4,
   },
   button: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#3B82F6',
     borderRadius: 8,
     paddingVertical: 12,
     marginTop: 24,
@@ -208,10 +217,10 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   footerText: {
-    color: '#6B7280',
+    color: '#94A3B8',
   },
   linkText: {
-    color: '#2563EB',
+    color: '#60A5FA',
     fontWeight: '600',
   },
 });
