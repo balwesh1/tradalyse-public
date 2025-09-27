@@ -21,15 +21,31 @@ interface Tag {
   created_at: string;
 }
 
+interface Strategy {
+  id: string;
+  name: string;
+  description: string | null;
+  color: string;
+  user_id: string;
+  created_at: string;
+}
+
 export default function SettingsScreen() {
   const { user } = useAuth();
   const [tags, setTags] = useState<Tag[]>([]);
+  const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [newTagName, setNewTagName] = useState('');
   const [showAddTag, setShowAddTag] = useState(false);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
   const [editTagName, setEditTagName] = useState('');
+  const [newStrategyName, setNewStrategyName] = useState('');
+  const [newStrategyDescription, setNewStrategyDescription] = useState('');
+  const [showAddStrategy, setShowAddStrategy] = useState(false);
+  const [editingStrategy, setEditingStrategy] = useState<Strategy | null>(null);
+  const [editStrategyName, setEditStrategyName] = useState('');
+  const [editStrategyDescription, setEditStrategyDescription] = useState('');
 
   // Generate random color for new tags
   const generateRandomColor = () => {
@@ -64,6 +80,25 @@ export default function SettingsScreen() {
       setTags(data || []);
     } catch (error) {
       console.error('Error in fetchTags:', error);
+    }
+  }, [user?.id]);
+
+  const fetchStrategies = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('strategies')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching strategies:', error);
+        return;
+      }
+
+      setStrategies(data || []);
+    } catch (error) {
+      console.error('Error in fetchStrategies:', error);
     } finally {
       setLoading(false);
     }
@@ -72,10 +107,11 @@ export default function SettingsScreen() {
   useEffect(() => {
     if (user) {
       fetchTags();
+      fetchStrategies();
     } else {
       setLoading(false);
     }
-  }, [user, fetchTags]);
+  }, [user, fetchTags, fetchStrategies]);
 
   const handleAddTag = async () => {
     if (!newTagName.trim()) {
@@ -225,6 +261,153 @@ export default function SettingsScreen() {
     );
   };
 
+  const handleAddStrategy = async () => {
+    if (!newStrategyName.trim()) {
+      Alert.alert('Error', 'Strategy name cannot be empty');
+      return;
+    }
+
+    // Check if strategy already exists
+    const existingStrategy = strategies.find(strategy => strategy.name.toLowerCase() === newStrategyName.toLowerCase());
+    if (existingStrategy) {
+      Alert.alert('Error', 'A strategy with this name already exists');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const { data, error } = await supabase
+        .from('strategies')
+        .insert({
+          name: newStrategyName.trim(),
+          description: newStrategyDescription.trim() || null,
+          color: generateRandomColor(),
+          user_id: user?.id,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        Alert.alert('Error', 'Failed to create strategy');
+        console.error('Error creating strategy:', error);
+        return;
+      }
+
+      setStrategies(prev => [data, ...prev]);
+      setNewStrategyName('');
+      setNewStrategyDescription('');
+      setShowAddStrategy(false);
+      Alert.alert('Success', 'Strategy created successfully');
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred');
+      console.error('Error in handleAddStrategy:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditStrategy = (strategy: Strategy) => {
+    setEditingStrategy(strategy);
+    setEditStrategyName(strategy.name);
+    setEditStrategyDescription(strategy.description || '');
+  };
+
+  const handleUpdateStrategy = async () => {
+    if (!editingStrategy || !editStrategyName.trim()) {
+      Alert.alert('Error', 'Strategy name cannot be empty');
+      return;
+    }
+
+    // Check if strategy name already exists (excluding current strategy)
+    const existingStrategy = strategies.find(strategy => 
+      strategy.name.toLowerCase() === editStrategyName.toLowerCase() && 
+      strategy.id !== editingStrategy.id
+    );
+    if (existingStrategy) {
+      Alert.alert('Error', 'A strategy with this name already exists');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const { error } = await supabase
+        .from('strategies')
+        .update({ 
+          name: editStrategyName.trim(),
+          description: editStrategyDescription.trim() || null
+        })
+        .eq('id', editingStrategy.id)
+        .eq('user_id', user?.id);
+
+      if (error) {
+        Alert.alert('Error', 'Failed to update strategy');
+        console.error('Error updating strategy:', error);
+        return;
+      }
+
+      setStrategies(prev => prev.map(strategy => 
+        strategy.id === editingStrategy.id 
+          ? { ...strategy, name: editStrategyName.trim(), description: editStrategyDescription.trim() || null }
+          : strategy
+      ));
+      setEditingStrategy(null);
+      setEditStrategyName('');
+      setEditStrategyDescription('');
+      Alert.alert('Success', 'Strategy updated successfully');
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred');
+      console.error('Error in handleUpdateStrategy:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelEditStrategy = () => {
+    setEditingStrategy(null);
+    setEditStrategyName('');
+    setEditStrategyDescription('');
+  };
+
+  const handleDeleteStrategy = async (strategyId: string) => {
+    Alert.alert(
+      'Delete Strategy',
+      'Are you sure you want to delete this strategy? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { data, error } = await supabase
+                .from('strategies')
+                .delete()
+                .eq('id', strategyId)
+                .eq('user_id', user?.id)
+                .select();
+
+              if (error) {
+                Alert.alert('Error', `Failed to delete strategy: ${error.message}`);
+                console.error('Error deleting strategy:', error);
+                return;
+              }
+
+              if (data && data.length > 0) {
+                setStrategies(prev => prev.filter(strategy => strategy.id !== strategyId));
+                Alert.alert('Success', 'Strategy deleted successfully');
+              } else {
+                Alert.alert('Error', 'Strategy not found or already deleted');
+              }
+            } catch (error) {
+              Alert.alert('Error', 'An unexpected error occurred');
+              console.error('Error in handleDeleteStrategy:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -344,6 +527,134 @@ export default function SettingsScreen() {
                             }}
                           >
                             <Text style={styles.deleteTagButtonText}>×</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </>
+                    )}
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
+
+          {/* Strategies Section */}
+          <View style={styles.strategiesCard}>
+            <View style={styles.strategiesHeader}>
+              <Text style={styles.cardTitle}>Trading Strategies</Text>
+              <TouchableOpacity
+                style={styles.addStrategyButton}
+                onPress={() => setShowAddStrategy(!showAddStrategy)}
+              >
+                <Text style={styles.addStrategyButtonText}>
+                  {showAddStrategy ? 'Cancel' : '+ Add Strategy'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {showAddStrategy && (
+              <View style={styles.addStrategyForm}>
+                <TextInput
+                  style={styles.strategyInput}
+                  value={newStrategyName}
+                  onChangeText={setNewStrategyName}
+                  placeholder="Strategy name (e.g., Breakout, Mean Reversion)"
+                  placeholderTextColor="#64748B"
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                />
+                <TextInput
+                  style={[styles.strategyInput, styles.strategyDescriptionInput]}
+                  value={newStrategyDescription}
+                  onChangeText={setNewStrategyDescription}
+                  placeholder="Description (optional)"
+                  placeholderTextColor="#64748B"
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+                <TouchableOpacity
+                  style={[styles.createStrategyButton, saving && styles.buttonDisabled]}
+                  onPress={handleAddStrategy}
+                  disabled={saving}
+                >
+                  <Text style={styles.createStrategyButtonText}>
+                    {saving ? 'Creating...' : 'Create Strategy'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Strategies List */}
+            <View style={styles.strategiesList}>
+              {strategies.length === 0 ? (
+                <View style={styles.emptyStrategiesContainer}>
+                  <Text style={styles.emptyStrategiesIcon}>📈</Text>
+                  <Text style={styles.emptyStrategiesTitle}>No Strategies Yet</Text>
+                  <Text style={styles.emptyStrategiesMessage}>
+                    Create custom trading strategies to categorize your trades and track specific approaches.
+                  </Text>
+                </View>
+              ) : (
+                strategies.map((strategy) => (
+                  <View key={strategy.id} style={styles.strategyItem}>
+                    <View style={[styles.strategyColor, { backgroundColor: strategy.color }]} />
+                    {editingStrategy?.id === strategy.id ? (
+                      <View style={styles.editStrategyContainer}>
+                        <TextInput
+                          style={styles.editStrategyInput}
+                          value={editStrategyName}
+                          onChangeText={setEditStrategyName}
+                          placeholder="Strategy name"
+                          placeholderTextColor="#64748B"
+                          autoCapitalize="words"
+                          autoCorrect={false}
+                        />
+                        <TextInput
+                          style={[styles.editStrategyInput, styles.editStrategyDescriptionInput]}
+                          value={editStrategyDescription}
+                          onChangeText={setEditStrategyDescription}
+                          placeholder="Description (optional)"
+                          placeholderTextColor="#64748B"
+                          multiline
+                          numberOfLines={2}
+                          textAlignVertical="top"
+                        />
+                        <View style={styles.editStrategyActions}>
+                          <TouchableOpacity
+                            style={styles.saveEditButton}
+                            onPress={handleUpdateStrategy}
+                            disabled={saving}
+                          >
+                            <Text style={styles.saveEditButtonText}>✓</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.cancelEditButton}
+                            onPress={handleCancelEditStrategy}
+                          >
+                            <Text style={styles.cancelEditButtonText}>✕</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ) : (
+                      <>
+                        <View style={styles.strategyContent}>
+                          <Text style={styles.strategyName}>{strategy.name}</Text>
+                          {strategy.description && (
+                            <Text style={styles.strategyDescription}>{strategy.description}</Text>
+                          )}
+                        </View>
+                        <View style={styles.strategyActions}>
+                          <TouchableOpacity
+                            style={styles.editStrategyButton}
+                            onPress={() => handleEditStrategy(strategy)}
+                          >
+                            <Text style={styles.editStrategyButtonText}>✏️</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.deleteStrategyButton}
+                            onPress={() => handleDeleteStrategy(strategy.id)}
+                          >
+                            <Text style={styles.deleteStrategyButtonText}>×</Text>
                           </TouchableOpacity>
                         </View>
                       </>
@@ -604,5 +915,183 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     marginTop: 8,
+  },
+  // Strategies styles
+  strategiesCard: {
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    marginBottom: 24,
+  },
+  strategiesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  addStrategyButton: {
+    backgroundColor: 'transparent',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#475569',
+  },
+  addStrategyButtonText: {
+    color: '#F8FAFC',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  addStrategyForm: {
+    gap: 12,
+    marginBottom: 20,
+  },
+  strategyInput: {
+    backgroundColor: '#334155',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    color: '#F8FAFC',
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#475569',
+  },
+  strategyDescriptionInput: {
+    height: 80,
+    textAlignVertical: 'top',
+  },
+  createStrategyButton: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  createStrategyButtonText: {
+    color: '#ffffff',
+    textAlign: 'center',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  strategiesList: {
+    gap: 12,
+  },
+  emptyStrategiesContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  emptyStrategiesIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  emptyStrategiesTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#F8FAFC',
+    marginBottom: 8,
+  },
+  emptyStrategiesMessage: {
+    fontSize: 14,
+    color: '#94A3B8',
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 16,
+  },
+  strategyItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#334155',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  strategyColor: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    marginRight: 12,
+    marginTop: 2,
+  },
+  strategyContent: {
+    flex: 1,
+    marginRight: 12,
+  },
+  strategyName: {
+    color: '#F8FAFC',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  strategyDescription: {
+    color: '#94A3B8',
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  strategyActions: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'flex-start',
+  },
+  editStrategyButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#3B82F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editStrategyButtonText: {
+    fontSize: 12,
+  },
+  deleteStrategyButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#EF4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteStrategyButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  editStrategyContainer: {
+    flex: 1,
+    gap: 8,
+  },
+  editStrategyInput: {
+    backgroundColor: '#334155',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    color: '#F8FAFC',
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#475569',
+  },
+  editStrategyDescriptionInput: {
+    height: 60,
+    textAlignVertical: 'top',
+  },
+  editStrategyActions: {
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'flex-end',
   },
 });
