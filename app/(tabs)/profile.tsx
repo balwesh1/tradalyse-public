@@ -41,6 +41,13 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [passwordError, setPasswordError] = useState('');
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -181,6 +188,64 @@ export default function ProfileScreen() {
     } catch (error) {
       Alert.alert('Error', 'An unexpected error occurred');
       console.error('Error in handleSave:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    // Validate inputs
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      setPasswordError('All fields are required');
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setPasswordError('New password must be at least 6 characters');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setPasswordError('');
+
+      // First, verify the current password by attempting to sign in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || '',
+        password: passwordData.currentPassword,
+      });
+
+      if (signInError) {
+        setPasswordError('Current password is incorrect');
+        return;
+      }
+
+      // Update the password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: passwordData.newPassword,
+      });
+
+      if (updateError) {
+        setPasswordError(updateError.message);
+        return;
+      }
+
+      // Success
+      Alert.alert('Success', 'Password updated successfully');
+      setIsChangingPassword(false);
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+    } catch (error) {
+      setPasswordError('An unexpected error occurred');
+      console.error('Error changing password:', error);
     } finally {
       setSaving(false);
     }
@@ -341,6 +406,78 @@ export default function ProfileScreen() {
                   </View>
                 </View>
               </View>
+            </View>
+
+            {/* Security Settings Card */}
+            <View style={styles.securityCard}>
+              <View style={styles.securityHeader}>
+                <Text style={styles.cardTitle}>Security Settings</Text>
+                <TouchableOpacity
+                  style={styles.changePasswordButton}
+                  onPress={() => setIsChangingPassword(!isChangingPassword)}
+                >
+                  <Text style={styles.changePasswordButtonText}>
+                    {isChangingPassword ? 'Cancel' : 'Change Password'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {isChangingPassword && (
+                <View style={styles.passwordForm}>
+                  <View style={styles.passwordField}>
+                    <Text style={styles.fieldLabel}>Current Password</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={passwordData.currentPassword}
+                      onChangeText={(text) => setPasswordData(prev => ({ ...prev, currentPassword: text }))}
+                      placeholder="Enter current password"
+                      placeholderTextColor="#64748B"
+                      secureTextEntry
+                      autoCapitalize="none"
+                    />
+                  </View>
+
+                  <View style={styles.passwordField}>
+                    <Text style={styles.fieldLabel}>New Password</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={passwordData.newPassword}
+                      onChangeText={(text) => setPasswordData(prev => ({ ...prev, newPassword: text }))}
+                      placeholder="Enter new password"
+                      placeholderTextColor="#64748B"
+                      secureTextEntry
+                      autoCapitalize="none"
+                    />
+                  </View>
+
+                  <View style={styles.passwordField}>
+                    <Text style={styles.fieldLabel}>Confirm New Password</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={passwordData.confirmPassword}
+                      onChangeText={(text) => setPasswordData(prev => ({ ...prev, confirmPassword: text }))}
+                      placeholder="Confirm new password"
+                      placeholderTextColor="#64748B"
+                      secureTextEntry
+                      autoCapitalize="none"
+                    />
+                  </View>
+
+                  {passwordError ? (
+                    <Text style={styles.passwordErrorText}>{passwordError}</Text>
+                  ) : null}
+
+                  <TouchableOpacity
+                    style={[styles.updatePasswordButton, saving && styles.buttonDisabled]}
+                    onPress={handlePasswordChange}
+                    disabled={saving}
+                  >
+                    <Text style={styles.updatePasswordButtonText}>
+                      {saving ? 'Updating...' : 'Update Password'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
 
                 {/* Trading Statistics Card */}
@@ -704,5 +841,65 @@ const styles = StyleSheet.create({
   },
   highRiskText: {
     color: '#EF4444', // Red for high risk
+  },
+  // Security Settings styles
+  securityCard: {
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  securityHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  changePasswordButton: {
+    backgroundColor: 'transparent',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#475569',
+  },
+  changePasswordButtonText: {
+    color: '#F8FAFC',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  passwordForm: {
+    gap: 16,
+  },
+  passwordField: {
+    marginBottom: 8,
+  },
+  passwordErrorText: {
+    color: '#F87171',
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  updatePasswordButton: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
+    paddingVertical: 12,
+    marginTop: 16,
+  },
+  updatePasswordButtonText: {
+    color: '#ffffff',
+    textAlign: 'center',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
 });
