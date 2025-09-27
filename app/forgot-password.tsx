@@ -1,10 +1,10 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { SignInFormData, signInSchema } from '@/lib/validations';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, router } from 'expo-router';
 import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
+    ActivityIndicator,
     Alert,
     KeyboardAvoidingView,
     Platform,
@@ -15,43 +15,81 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { z } from 'zod';
 
-export default function SignInScreen() {
+const forgotPasswordSchema = z.object({
+  email: z.string().email('Invalid email address'),
+});
+
+type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
+
+export default function ForgotPasswordScreen() {
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const [showSuccess, setShowSuccess] = useState(false);
+  const { resetPassword } = useAuth();
 
   const {
     control,
     handleSubmit,
+    reset,
     formState: { errors },
-  } = useForm<SignInFormData>({
-    resolver: zodResolver(signInSchema),
+  } = useForm<ForgotPasswordFormData>({
+    resolver: zodResolver(forgotPasswordSchema),
   });
 
-  const onSubmit = async (data: SignInFormData) => {
+  const onSubmit = async (data: ForgotPasswordFormData) => {
     try {
       setLoading(true);
-      const { error } = await signIn(data.email, data.password);
+      const { error } = await resetPassword(data.email);
       
       if (error) {
-        // Handle specific error cases
-        if (error.message.includes('Invalid login credentials')) {
-          Alert.alert('Login Failed', 'Invalid email or password. Please check your credentials and try again.');
-        } else if (error.message.includes('Email not confirmed')) {
-          Alert.alert('Email Not Verified', 'Please check your email and click the verification link before signing in.');
-        } else {
-          Alert.alert('Error', error.message);
-        }
+        Alert.alert('Error', error.message);
       } else {
-        // Success - user will be automatically redirected by the auth context
-        router.replace('/(tabs)');
+        // Show success message
+        setShowSuccess(true);
+        // Clear the form
+        reset();
+        // Hide success message after 5 seconds and redirect
+        setTimeout(() => {
+          setShowSuccess(false);
+          router.replace('/signin');
+        }, 5000);
       }
     } catch (error) {
-      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      Alert.alert('Error', 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
   };
+
+  if (showSuccess) {
+    return (
+      <View style={styles.successContainer}>
+        <View style={styles.successCard}>
+          <Text style={styles.successIcon}>📧</Text>
+          <Text style={styles.successTitle}>Password Reset Email Sent!</Text>
+          <Text style={styles.successMessage}>
+            We've sent a password reset link to your email address. Please check your inbox and follow the instructions to reset your password.
+          </Text>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="#3B82F6" />
+            <Text style={styles.loadingText}>Redirecting to login...</Text>
+          </View>
+          <View style={styles.successActions}>
+            <TouchableOpacity 
+              style={styles.loginButton}
+              onPress={() => {
+                setShowSuccess(false);
+                router.replace('/signin');
+              }}
+            >
+              <Text style={styles.loginButtonText}>Back to Login</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -61,8 +99,8 @@ export default function SignInScreen() {
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>Sign in to your trading journal</Text>
+            <Text style={styles.title}>Reset Password</Text>
+            <Text style={styles.subtitle}>Enter your email to receive a password reset link</Text>
           </View>
 
           <View style={styles.form}>
@@ -92,54 +130,21 @@ export default function SignInScreen() {
               )}
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <Controller
-                control={control}
-                name="password"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter your password"
-                    placeholderTextColor="#9CA3AF"
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    value={value}
-                    secureTextEntry
-                    autoCapitalize="none"
-                  />
-                )}
-              />
-              {errors.password && (
-                <Text style={styles.errorText}>
-                  {errors.password.message}
-                </Text>
-              )}
-            </View>
-
             <TouchableOpacity
               style={[styles.button, loading && styles.buttonDisabled]}
               onPress={handleSubmit(onSubmit)}
               disabled={loading}
             >
               <Text style={styles.buttonText}>
-                {loading ? 'Signing In...' : 'Sign In'}
+                {loading ? 'Sending...' : 'Send Reset Link'}
               </Text>
             </TouchableOpacity>
 
-            <View style={styles.forgotPasswordContainer}>
-              <Link href="/forgot-password" asChild>
-                <TouchableOpacity>
-                  <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-                </TouchableOpacity>
-              </Link>
-            </View>
-
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Don't have an account? </Text>
-              <Link href="/signup" asChild>
+              <Text style={styles.footerText}>Remember your password? </Text>
+              <Link href="/signin" asChild>
                 <TouchableOpacity>
-                  <Text style={styles.linkText}>Sign Up</Text>
+                  <Text style={styles.linkText}>Sign In</Text>
                 </TouchableOpacity>
               </Link>
             </View>
@@ -219,15 +224,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 18,
   },
-  forgotPasswordContainer: {
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  forgotPasswordText: {
-    color: '#60A5FA',
-    fontWeight: '500',
-    fontSize: 16,
-  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -239,5 +235,73 @@ const styles = StyleSheet.create({
   linkText: {
     color: '#60A5FA',
     fontWeight: '600',
+  },
+  // Success screen styles
+  successContainer: {
+    flex: 1,
+    backgroundColor: '#0F172A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  successCard: {
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    maxWidth: 400,
+    width: '100%',
+  },
+  successIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  successTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#F8FAFC',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  successMessage: {
+    color: '#94A3B8',
+    textAlign: 'center',
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 16,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  loadingText: {
+    color: '#3B82F6',
+    marginLeft: 8,
+    fontSize: 14,
+  },
+  successActions: {
+    width: '100%',
+  },
+  loginButton: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  loginButtonText: {
+    color: '#ffffff',
+    textAlign: 'center',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });
