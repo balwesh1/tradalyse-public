@@ -1,50 +1,103 @@
-# Welcome to your Expo app 👋
+# Tradalyse - Trading Journal App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A comprehensive trading journal application built with React Native, Expo, and Supabase.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **Authentication**: Secure sign up and sign in with Supabase Auth
+- **Dashboard**: Overview of trading statistics and performance
+- **Trade Tracking**: Record and manage your trades
+- **Analytics**: Detailed analytics and insights
+- **Profile Management**: User profile and settings
 
-   ```bash
-   npm install
-   ```
+## Tech Stack
 
-2. Start the app
+- **Frontend**: React Native, Expo
+- **Styling**: NativeWind (TailwindCSS for React Native)
+- **Backend**: Supabase
+- **Authentication**: Supabase Auth
+- **Form Handling**: React Hook Form with Zod validation
+- **Navigation**: Expo Router
 
-   ```bash
-   npx expo start
-   ```
+## Setup Instructions
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+### 1. Install Dependencies
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 2. Configure Supabase
 
-## Learn more
+1. Create a new project at [supabase.com](https://supabase.com)
+2. Get your project URL and anon key from the project settings
+3. Create a `.env` file in the root directory with:
 
-To learn more about developing your project with Expo, look at the following resources:
+```env
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_url_here
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### 3. Run the App
 
-## Join the community
+```bash
+# Start the development server
+npm start
 
-Join our community of developers creating universal apps.
+# Run on iOS
+npm run ios
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+# Run on Android
+npm run android
+
+# Run on Web
+npm run web
+```
+
+## Project Structure
+
+```
+app/
+├── (tabs)/           # Tab navigation screens
+│   ├── index.tsx     # Home/Dashboard
+│   ├── trades.tsx    # Trade history
+│   ├── analytics.tsx # Analytics dashboard
+│   └── profile.tsx   # User profile
+├── signin.tsx        # Sign in screen
+├── signup.tsx        # Sign up screen
+└── _layout.tsx       # Root layout with auth
+
+contexts/
+└── AuthContext.tsx   # Authentication context
+
+lib/
+├── supabase.ts       # Supabase client
+└── validations.ts    # Form validation schemas
+```
+
+## Authentication Flow
+
+1. **Unauthenticated users** are redirected to the sign-in screen
+2. **New users** can sign up and will receive an email verification
+3. **Authenticated users** can access the main app with tab navigation
+4. **Sign out** functionality is available in the profile tab
+
+## Next Steps
+
+- Set up Supabase database tables for trades
+- Implement trade creation and editing
+- Add analytics and charting
+- Implement profile management
+- Add push notifications
+- Add data export functionality
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## License
+
+MIT License
