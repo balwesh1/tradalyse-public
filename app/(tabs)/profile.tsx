@@ -51,14 +51,11 @@ export default function ProfileScreen() {
 
   const fetchProfile = useCallback(async () => {
     try {
-      console.log('Fetching profile for user:', user?.id);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user?.id)
         .single();
-
-      console.log('Profile fetch result:', { data, error });
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching profile:', error);
@@ -75,11 +72,9 @@ export default function ProfileScreen() {
         if (insertError) {
           console.error('Error creating profile:', insertError);
         } else {
-          console.log('Created new profile:', newProfile);
           setProfile(newProfile);
         }
       } else if (data) {
-        console.log('Found existing profile:', data);
         setProfile(data);
       }
     } catch (error) {
@@ -87,7 +82,7 @@ export default function ProfileScreen() {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, user?.email]);
+  }, [user]);
 
   const fetchTradingStats = useCallback(async () => {
     try {
@@ -143,7 +138,6 @@ export default function ProfileScreen() {
         riskScore,
       };
 
-      console.log('Trading stats calculated:', stats);
       setTradingStats(stats);
     } catch (error) {
       console.error('Error in fetchTradingStats:', error);
@@ -154,15 +148,16 @@ export default function ProfileScreen() {
     if (user) {
       fetchProfile();
       fetchTradingStats();
+    } else {
+      setLoading(false);
     }
-  }, [user, fetchProfile, fetchTradingStats]);
+  }, [user, loading, fetchProfile, fetchTradingStats]);
 
   const handleSave = async () => {
     if (!profile) return;
 
     try {
       setSaving(true);
-      console.log('Saving profile:', profile);
       const { error } = await supabase
         .from('profiles')
         .upsert({
@@ -175,8 +170,6 @@ export default function ProfileScreen() {
           preferred_markets: profile.preferred_markets,
           updated_at: new Date().toISOString(),
         });
-
-      console.log('Save result:', { error });
 
       if (error) {
         Alert.alert('Error', 'Failed to save profile');
