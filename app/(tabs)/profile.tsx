@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     paddingVertical: 32,
   },
   loadingContainer: {
@@ -473,15 +473,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   mainContent: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     gap: 24,
     marginBottom: 32,
   },
   profileCard: {
     backgroundColor: '#1E293B',
     borderRadius: 16,
-    padding: 24,
-    flex: 1,
+    padding: 20,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -588,11 +587,11 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   formRow: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     gap: 16,
   },
   formField: {
-    flex: 1,
+    marginBottom: 8,
   },
   fieldLabel: {
     fontSize: 14,
@@ -618,8 +617,7 @@ const styles = StyleSheet.create({
   statsCard: {
     backgroundColor: '#1E293B',
     borderRadius: 16,
-    padding: 24,
-    flex: 1,
+    padding: 20,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -633,10 +631,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 24,
+    flexWrap: 'wrap',
   },
   statItem: {
     flex: 1,
     alignItems: 'flex-start',
+    minWidth: 140,
+    marginBottom: 8,
   },
   statLabel: {
     fontSize: 14,
