@@ -56,6 +56,7 @@ export default function AddTradeScreen() {
     stopLoss: '',
     standardLotSize: '100',
     quantity: '',
+    commission: '',
     entryDate: '',
     exitDate: '',
     status: 'Open',
@@ -207,11 +208,16 @@ export default function AddTradeScreen() {
     const entryTotal = calculateTotalCost(formData.entryPrice, formData.quantity, formData.standardLotSize);
     const exitTotal = calculateTotalCost(formData.exitPrice, formData.quantity, formData.standardLotSize);
     
+    let pnl = 0;
     if (formData.tradeType === 'Long') {
-      return exitTotal - entryTotal;
+      pnl = exitTotal - entryTotal;
     } else {
-      return entryTotal - exitTotal;
+      pnl = entryTotal - exitTotal;
     }
+    
+    // Subtract commission from profit/loss
+    const commission = parseFloat(formData.commission) || 0;
+    return pnl - commission;
   };
 
   const handleSave = async () => {
@@ -296,6 +302,7 @@ export default function AddTradeScreen() {
         stopLoss: '',
         standardLotSize: '100',
         quantity: '',
+        commission: '',
         entryDate: '',
         exitDate: '',
         status: 'Open',
@@ -450,6 +457,20 @@ export default function AddTradeScreen() {
                   />
                 </View>
 
+                <View style={styles.formField}>
+                  <Text style={styles.fieldLabel}>Commission</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={formData.commission}
+                    onChangeText={(text) => handleInputChange('commission', text)}
+                    placeholder="0.00"
+                    placeholderTextColor="#6B7280"
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.formRow}>
                 <View style={styles.formField}>
                   <Text style={styles.fieldLabel}>Quantity *</Text>
                   <TextInput
