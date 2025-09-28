@@ -3,18 +3,18 @@ import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 interface Tag {
@@ -144,7 +144,7 @@ export default function AddTradeScreen() {
     const lotSizeNum = parseFloat(lotSize) || 100;
     
     if (formData.assetType === 'Option') {
-      return priceNum * lotSizeNum;
+      return priceNum * lotSizeNum * quantityNum;
     }
     return priceNum * quantityNum;
   };
