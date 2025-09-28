@@ -31,7 +31,8 @@ interface Strategy {
 
 export default function AddTradeScreen() {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
+  
   const [saving, setSaving] = useState(false);
   const [tags, setTags] = useState<Tag[]>([]);
   const [strategies, setStrategies] = useState<Strategy[]>([]);
@@ -43,6 +44,12 @@ export default function AddTradeScreen() {
   const [showStrategyModal, setShowStrategyModal] = useState(false);
   const [showEntryDateModal, setShowEntryDateModal] = useState(false);
   const [showExitDateModal, setShowExitDateModal] = useState(false);
+  
+  // Date picker states
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedDay, setSelectedDay] = useState(new Date().getDate());
+  const [currentDateField, setCurrentDateField] = useState<'entry' | 'exit' | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -130,12 +137,83 @@ export default function AddTradeScreen() {
   const generateDateOptions = () => {
     const dates = [];
     const today = new Date();
-    for (let i = 0; i < 365; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - i);
+    const startDate = new Date(2020, 0, 1); // Start from 2020
+    
+    // Generate dates from 2020 to today
+    for (let date = new Date(today); date >= startDate; date.setDate(date.getDate() - 1)) {
       dates.push(date.toISOString().split('T')[0]);
     }
     return dates;
+  };
+
+  const generateYears = () => {
+    const years = [];
+    const currentYear = new Date().getFullYear();
+    for (let year = currentYear; year >= 2020; year--) {
+      years.push(year);
+    }
+    return years;
+  };
+
+  const generateMonths = () => {
+    return [
+      { value: 1, name: 'January' },
+      { value: 2, name: 'February' },
+      { value: 3, name: 'March' },
+      { value: 4, name: 'April' },
+      { value: 5, name: 'May' },
+      { value: 6, name: 'June' },
+      { value: 7, name: 'July' },
+      { value: 8, name: 'August' },
+      { value: 9, name: 'September' },
+      { value: 10, name: 'October' },
+      { value: 11, name: 'November' },
+      { value: 12, name: 'December' },
+    ];
+  };
+
+  const generateDays = (year: number, month: number) => {
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const days = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(day);
+    }
+    return days;
+  };
+
+  const handleDateSelection = (field: 'entry' | 'exit') => {
+    const dateString = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-${selectedDay.toString().padStart(2, '0')}`;
+    handleInputChange(field === 'entry' ? 'entryDate' : 'exitDate', dateString);
+    
+    if (field === 'entry') {
+      setShowEntryDateModal(false);
+    } else {
+      setShowExitDateModal(false);
+    }
+    setCurrentDateField(null);
+  };
+
+  const openDatePicker = (field: 'entry' | 'exit') => {
+    setCurrentDateField(field);
+    
+    // Set initial values from current form data
+    if (field === 'entry' && formData.entryDate) {
+      const date = new Date(formData.entryDate);
+      setSelectedYear(date.getFullYear());
+      setSelectedMonth(date.getMonth() + 1);
+      setSelectedDay(date.getDate());
+    } else if (field === 'exit' && formData.exitDate) {
+      const date = new Date(formData.exitDate);
+      setSelectedYear(date.getFullYear());
+      setSelectedMonth(date.getMonth() + 1);
+      setSelectedDay(date.getDate());
+    }
+    
+    if (field === 'entry') {
+      setShowEntryDateModal(true);
+    } else {
+      setShowExitDateModal(true);
+    }
   };
 
   const calculateTotalCost = (price: string, quantity: string, lotSize: string) => {
@@ -185,40 +263,60 @@ export default function AddTradeScreen() {
       const pnl = formData.status === 'Closed' ? calculatePnL() : 0;
       const exitDate = formData.status === 'Closed' && formData.exitDate ? formData.exitDate : null;
 
-      const { error } = await supabase
+      const tradeData = {
+        user_id: user?.id,
+        symbol: formData.symbol.trim(),
+        side: formData.tradeType,
+        trade_type: formData.tradeType,
+        asset_type: formData.assetType || 'Stock',
+        price: parseFloat(formData.entryPrice), // Legacy price field
+        entry_price: parseFloat(formData.entryPrice),
+        exit_price: formData.exitPrice ? parseFloat(formData.exitPrice) : null,
+        stop_loss: formData.stopLoss ? parseFloat(formData.stopLoss) : null,
+        standard_lot_size: parseFloat(formData.standardLotSize),
+        quantity: parseFloat(formData.quantity),
+        pnl: pnl,
+        status: formData.status.toLowerCase(),
+        entry_date: formData.entryDate,
+        exit_date: exitDate,
+        strategy_id: selectedStrategy || null,
+        tags: selectedTags.length > 0 ? selectedTags : null,
+        notes: formData.notes.trim() || null,
+      };
+
+      const { data, error } = await supabase
         .from('trades')
-        .insert({
-          user_id: user?.id,
-          symbol: formData.symbol.trim(),
-          side: formData.tradeType,
-          trade_type: formData.tradeType,
-          asset_type: formData.assetType,
-          entry_price: parseFloat(formData.entryPrice),
-          exit_price: formData.exitPrice ? parseFloat(formData.exitPrice) : null,
-          stop_loss: formData.stopLoss ? parseFloat(formData.stopLoss) : null,
-          standard_lot_size: parseFloat(formData.standardLotSize),
-          quantity: parseFloat(formData.quantity),
-          pnl: pnl,
-          status: formData.status.toLowerCase(),
-          entry_date: formData.entryDate,
-          exit_date: exitDate,
-          strategy_id: selectedStrategy || null,
-          tags: selectedTags.length > 0 ? selectedTags : null,
-          notes: formData.notes.trim() || null,
-        });
+        .insert(tradeData)
+        .select();
 
       if (error) {
-        Alert.alert('Error', 'Failed to save trade');
-        console.error('Error saving trade:', error);
+        Alert.alert('Error', `Failed to save trade: ${error.message}`);
         return;
       }
 
-      Alert.alert('Success', 'Trade saved successfully', [
+      // Clear form data
+      setFormData({
+        symbol: '',
+        tradeType: 'Long',
+        assetType: 'Stock',
+        entryPrice: '',
+        exitPrice: '',
+        stopLoss: '',
+        standardLotSize: '100',
+        quantity: '',
+        entryDate: new Date().toISOString().split('T')[0],
+        exitDate: '',
+        status: 'Open',
+        notes: '',
+      });
+      setSelectedTags([]);
+      setSelectedStrategy('');
+      
+      Alert.alert('Success', 'Trade saved successfully!', [
         { text: 'OK', onPress: () => router.back() }
       ]);
     } catch (error) {
-      Alert.alert('Error', 'An unexpected error occurred');
-      console.error('Error in handleSave:', error);
+      Alert.alert('Error', `An unexpected error occurred: ${error}`);
     } finally {
       setSaving(false);
     }
@@ -421,7 +519,7 @@ export default function AddTradeScreen() {
                   <Text style={styles.fieldLabel}>Entry Date *</Text>
                   <TouchableOpacity
                     style={styles.dateButton}
-                    onPress={() => setShowEntryDateModal(true)}
+                    onPress={() => openDatePicker('entry')}
                   >
                     <Text style={styles.dateButtonText}>
                       {formatDate(formData.entryDate) || 'Select Date'}
@@ -434,7 +532,7 @@ export default function AddTradeScreen() {
                   <Text style={styles.fieldLabel}>Exit Date</Text>
                   <TouchableOpacity
                     style={styles.dateButton}
-                    onPress={() => setShowExitDateModal(true)}
+                    onPress={() => openDatePicker('exit')}
                   >
                     <Text style={styles.dateButtonText}>
                       {formatDate(formData.exitDate) || 'Select Date'}
@@ -546,7 +644,9 @@ export default function AddTradeScreen() {
             {/* Save Button */}
             <TouchableOpacity
               style={[styles.saveButton, saving && styles.buttonDisabled]}
-              onPress={handleSave}
+              onPress={() => {
+                handleSave();
+              }}
               disabled={saving}
             >
               <Text style={styles.saveButtonText}>
@@ -573,10 +673,10 @@ export default function AddTradeScreen() {
                     styles.modalOption,
                     formData.assetType === type && styles.modalOptionSelected
                   ]}
-                  onPress={() => {
-                    handleInputChange('assetType', type);
-                    setShowAssetTypeModal(false);
-                  }}
+                    onPress={() => {
+                      handleInputChange('assetType', type);
+                      setShowAssetTypeModal(false);
+                    }}
                 >
                   <Text style={[
                     styles.modalOptionText,
@@ -663,28 +763,113 @@ export default function AddTradeScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Select Entry Date</Text>
-              <ScrollView style={styles.dateScrollView}>
-                {generateDateOptions().map((date) => (
+              
+              {currentDateField === 'entry' ? (
+                <View style={styles.calendarContainer}>
+                  {/* Year Selector */}
+                  <View style={styles.dateSelectorRow}>
+                    <Text style={styles.dateSelectorLabel}>Year:</Text>
+                    <ScrollView horizontal style={styles.dateSelectorScroll}>
+                      {generateYears().map((year) => (
+                        <TouchableOpacity
+                          key={year}
+                          style={[
+                            styles.dateSelectorOption,
+                            selectedYear === year && styles.dateSelectorOptionSelected
+                          ]}
+                          onPress={() => setSelectedYear(year)}
+                        >
+                          <Text style={[
+                            styles.dateSelectorOptionText,
+                            selectedYear === year && styles.dateSelectorOptionTextSelected
+                          ]}>
+                            {year}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+
+                  {/* Month Selector */}
+                  <View style={styles.dateSelectorRow}>
+                    <Text style={styles.dateSelectorLabel}>Month:</Text>
+                    <ScrollView horizontal style={styles.dateSelectorScroll}>
+                      {generateMonths().map((month) => (
+                        <TouchableOpacity
+                          key={month.value}
+                          style={[
+                            styles.dateSelectorOption,
+                            selectedMonth === month.value && styles.dateSelectorOptionSelected
+                          ]}
+                          onPress={() => setSelectedMonth(month.value)}
+                        >
+                          <Text style={[
+                            styles.dateSelectorOptionText,
+                            selectedMonth === month.value && styles.dateSelectorOptionTextSelected
+                          ]}>
+                            {month.name}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+
+                  {/* Day Selector */}
+                  <View style={styles.dateSelectorRow}>
+                    <Text style={styles.dateSelectorLabel}>Day:</Text>
+                    <ScrollView horizontal style={styles.dateSelectorScroll}>
+                      {generateDays(selectedYear, selectedMonth).map((day) => (
+                        <TouchableOpacity
+                          key={day}
+                          style={[
+                            styles.dateSelectorOption,
+                            selectedDay === day && styles.dateSelectorOptionSelected
+                          ]}
+                          onPress={() => setSelectedDay(day)}
+                        >
+                          <Text style={[
+                            styles.dateSelectorOptionText,
+                            selectedDay === day && styles.dateSelectorOptionTextSelected
+                          ]}>
+                            {day}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+
                   <TouchableOpacity
-                    key={date}
-                    style={[
-                      styles.modalOption,
-                      formData.entryDate === date && styles.modalOptionSelected
-                    ]}
-                    onPress={() => {
-                      handleInputChange('entryDate', date);
-                      setShowEntryDateModal(false);
-                    }}
+                    style={styles.dateConfirmButton}
+                    onPress={() => handleDateSelection('entry')}
                   >
-                    <Text style={[
-                      styles.modalOptionText,
-                      formData.entryDate === date && styles.modalOptionTextSelected
-                    ]}>
-                      {formatDate(date)}
-                    </Text>
+                    <Text style={styles.dateConfirmButtonText}>Select Date</Text>
                   </TouchableOpacity>
-                ))}
-              </ScrollView>
+                </View>
+              ) : (
+                <ScrollView style={styles.dateScrollView}>
+                  {generateDateOptions().map((date) => (
+                    <TouchableOpacity
+                      key={date}
+                      style={[
+                        styles.modalOption,
+                        formData.entryDate === date && styles.modalOptionSelected
+                      ]}
+                      onPress={() => {
+                        handleInputChange('entryDate', date);
+                        setShowEntryDateModal(false);
+                      }}
+                    >
+                      <Text style={[
+                        styles.modalOptionText,
+                        formData.entryDate === date && styles.modalOptionTextSelected
+                      ]}>
+                        {formatDate(date)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+              
               <TouchableOpacity
                 style={styles.modalCancelButton}
                 onPress={() => setShowEntryDateModal(false)}
@@ -705,45 +890,130 @@ export default function AddTradeScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Select Exit Date</Text>
-              <ScrollView style={styles.dateScrollView}>
-                <TouchableOpacity
-                  style={[
-                    styles.modalOption,
-                    !formData.exitDate && styles.modalOptionSelected
-                  ]}
-                  onPress={() => {
-                    handleInputChange('exitDate', '');
-                    setShowExitDateModal(false);
-                  }}
-                >
-                  <Text style={[
-                    styles.modalOptionText,
-                    !formData.exitDate && styles.modalOptionTextSelected
-                  ]}>
-                    No Exit Date
-                  </Text>
-                </TouchableOpacity>
-                {generateDateOptions().map((date) => (
+              
+              {currentDateField === 'exit' ? (
+                <View style={styles.calendarContainer}>
+                  {/* Year Selector */}
+                  <View style={styles.dateSelectorRow}>
+                    <Text style={styles.dateSelectorLabel}>Year:</Text>
+                    <ScrollView horizontal style={styles.dateSelectorScroll}>
+                      {generateYears().map((year) => (
+                        <TouchableOpacity
+                          key={year}
+                          style={[
+                            styles.dateSelectorOption,
+                            selectedYear === year && styles.dateSelectorOptionSelected
+                          ]}
+                          onPress={() => setSelectedYear(year)}
+                        >
+                          <Text style={[
+                            styles.dateSelectorOptionText,
+                            selectedYear === year && styles.dateSelectorOptionTextSelected
+                          ]}>
+                            {year}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+
+                  {/* Month Selector */}
+                  <View style={styles.dateSelectorRow}>
+                    <Text style={styles.dateSelectorLabel}>Month:</Text>
+                    <ScrollView horizontal style={styles.dateSelectorScroll}>
+                      {generateMonths().map((month) => (
+                        <TouchableOpacity
+                          key={month.value}
+                          style={[
+                            styles.dateSelectorOption,
+                            selectedMonth === month.value && styles.dateSelectorOptionSelected
+                          ]}
+                          onPress={() => setSelectedMonth(month.value)}
+                        >
+                          <Text style={[
+                            styles.dateSelectorOptionText,
+                            selectedMonth === month.value && styles.dateSelectorOptionTextSelected
+                          ]}>
+                            {month.name}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+
+                  {/* Day Selector */}
+                  <View style={styles.dateSelectorRow}>
+                    <Text style={styles.dateSelectorLabel}>Day:</Text>
+                    <ScrollView horizontal style={styles.dateSelectorScroll}>
+                      {generateDays(selectedYear, selectedMonth).map((day) => (
+                        <TouchableOpacity
+                          key={day}
+                          style={[
+                            styles.dateSelectorOption,
+                            selectedDay === day && styles.dateSelectorOptionSelected
+                          ]}
+                          onPress={() => setSelectedDay(day)}
+                        >
+                          <Text style={[
+                            styles.dateSelectorOptionText,
+                            selectedDay === day && styles.dateSelectorOptionTextSelected
+                          ]}>
+                            {day}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+
                   <TouchableOpacity
-                    key={date}
+                    style={styles.dateConfirmButton}
+                    onPress={() => handleDateSelection('exit')}
+                  >
+                    <Text style={styles.dateConfirmButtonText}>Select Date</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <ScrollView style={styles.dateScrollView}>
+                  <TouchableOpacity
                     style={[
                       styles.modalOption,
-                      formData.exitDate === date && styles.modalOptionSelected
+                      !formData.exitDate && styles.modalOptionSelected
                     ]}
                     onPress={() => {
-                      handleInputChange('exitDate', date);
+                      handleInputChange('exitDate', '');
                       setShowExitDateModal(false);
                     }}
                   >
                     <Text style={[
                       styles.modalOptionText,
-                      formData.exitDate === date && styles.modalOptionTextSelected
+                      !formData.exitDate && styles.modalOptionTextSelected
                     ]}>
-                      {formatDate(date)}
+                      No Exit Date
                     </Text>
                   </TouchableOpacity>
-                ))}
-              </ScrollView>
+                  {generateDateOptions().map((date) => (
+                    <TouchableOpacity
+                      key={date}
+                      style={[
+                        styles.modalOption,
+                        formData.exitDate === date && styles.modalOptionSelected
+                      ]}
+                      onPress={() => {
+                        handleInputChange('exitDate', date);
+                        setShowExitDateModal(false);
+                      }}
+                    >
+                      <Text style={[
+                        styles.modalOptionText,
+                        formData.exitDate === date && styles.modalOptionTextSelected
+                      ]}>
+                        {formatDate(date)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+              
               <TouchableOpacity
                 style={styles.modalCancelButton}
                 onPress={() => setShowExitDateModal(false)}
@@ -1047,5 +1317,61 @@ const styles = StyleSheet.create({
   },
   dateScrollView: {
     maxHeight: 300,
+  },
+  // Calendar widget styles
+  calendarContainer: {
+    gap: 16,
+  },
+  dateSelectorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  dateSelectorLabel: {
+    color: '#B8BCC8',
+    fontSize: 16,
+    fontWeight: '500',
+    minWidth: 60,
+    marginRight: 12,
+  },
+  dateSelectorScroll: {
+    flex: 1,
+    maxHeight: 50,
+  },
+  dateSelectorOption: {
+    backgroundColor: '#2D3748',
+    borderRadius: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#4A5568',
+    minWidth: 50,
+    alignItems: 'center',
+  },
+  dateSelectorOptionSelected: {
+    backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
+  },
+  dateSelectorOptionText: {
+    color: '#B8BCC8',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  dateSelectorOptionTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  dateConfirmButton: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
+    paddingVertical: 12,
+    marginTop: 16,
+  },
+  dateConfirmButtonText: {
+    color: '#FFFFFF',
+    textAlign: 'center',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });
