@@ -681,7 +681,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#0A0E1A',
   },
   scrollView: {
     flex: 1,
@@ -696,7 +696,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#94A3B8',
+    color: '#B8BCC8',
     marginTop: 16,
     fontSize: 16,
   },
@@ -706,15 +706,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#F8FAFC',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   subtitle: {
-    color: '#94A3B8',
+    color: '#B8BCC8',
     fontSize: 16,
   },
   tagsCard: {
-    backgroundColor: '#1E293B',
+    backgroundColor: '#1A1F2E',
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
@@ -736,7 +736,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#F8FAFC',
+    color: '#FFFFFF',
   },
   addTagButton: {
     backgroundColor: 'transparent',
@@ -744,10 +744,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#475569',
+    borderColor: '#4A5568',
   },
   addTagButtonText: {
-    color: '#F8FAFC',
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -756,14 +756,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   tagInput: {
-    backgroundColor: '#334155',
+    backgroundColor: '#2D3748',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    color: '#F8FAFC',
+    color: '#FFFFFF',
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#475569',
+    borderColor: '#4A5568',
   },
   createTagButton: {
     backgroundColor: '#3B82F6',
@@ -793,12 +793,12 @@ const styles = StyleSheet.create({
   emptyTagsTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#F8FAFC',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   emptyTagsMessage: {
     fontSize: 14,
-    color: '#94A3B8',
+    color: '#B8BCC8',
     textAlign: 'center',
     lineHeight: 20,
     paddingHorizontal: 16,
@@ -806,7 +806,7 @@ const styles = StyleSheet.create({
   tagItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#334155',
+    backgroundColor: '#2D3748',
     borderRadius: 8,
     padding: 12,
   },
@@ -818,7 +818,7 @@ const styles = StyleSheet.create({
   },
   tagName: {
     flex: 1,
-    color: '#F8FAFC',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '500',
   },
@@ -858,14 +858,14 @@ const styles = StyleSheet.create({
   },
   editTagInput: {
     flex: 1,
-    backgroundColor: '#334155',
+    backgroundColor: '#2D3748',
     borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    color: '#F8FAFC',
+    color: '#FFFFFF',
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#475569',
+    borderColor: '#4A5568',
   },
   editTagActions: {
     flexDirection: 'row',
@@ -898,7 +898,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   settingsCard: {
-    backgroundColor: '#1E293B',
+    backgroundColor: '#1A1F2E',
     borderRadius: 16,
     padding: 20,
     shadowColor: '#000',
@@ -911,14 +911,14 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   settingsDescription: {
-    color: '#94A3B8',
+    color: '#B8BCC8',
     fontSize: 14,
     lineHeight: 20,
     marginTop: 8,
   },
   // Strategies styles
   strategiesCard: {
-    backgroundColor: '#1E293B',
+    backgroundColor: '#1A1F2E',
     borderRadius: 16,
     padding: 20,
     shadowColor: '#000',
@@ -943,10 +943,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#475569',
+    borderColor: '#4A5568',
   },
   addStrategyButtonText: {
-    color: '#F8FAFC',
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -955,14 +955,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   strategyInput: {
-    backgroundColor: '#334155',
+    backgroundColor: '#2D3748',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    color: '#F8FAFC',
+    color: '#FFFFFF',
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#475569',
+    borderColor: '#4A5568',
   },
   strategyDescriptionInput: {
     height: 80,
@@ -994,12 +994,12 @@ const styles = StyleSheet.create({
   emptyStrategiesTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#F8FAFC',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   emptyStrategiesMessage: {
     fontSize: 14,
-    color: '#94A3B8',
+    color: '#B8BCC8',
     textAlign: 'center',
     lineHeight: 20,
     paddingHorizontal: 16,
@@ -1007,7 +1007,7 @@ const styles = StyleSheet.create({
   strategyItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#334155',
+    backgroundColor: '#2D3748',
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -1032,13 +1032,13 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   strategyName: {
-    color: '#F8FAFC',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
   },
   strategyDescription: {
-    color: '#94A3B8',
+    color: '#B8BCC8',
     fontSize: 14,
     lineHeight: 18,
   },
@@ -1076,14 +1076,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   editStrategyInput: {
-    backgroundColor: '#334155',
+    backgroundColor: '#2D3748',
     borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    color: '#F8FAFC',
+    color: '#FFFFFF',
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#475569',
+    borderColor: '#4A5568',
   },
   editStrategyDescriptionInput: {
     height: 60,

@@ -16,14 +16,40 @@ export const Colors = {
     icon: '#687076',
     tabIconDefault: '#687076',
     tabIconSelected: tintColorLight,
+    // Add missing properties for compatibility
+    tabBarBackground: '#fff',
+    tabBarBorder: '#e5e7eb',
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    // Main background - very dark blue-black
+    background: '#0A0E1A',
+    // Card backgrounds - dark blue-gray
+    cardBackground: '#1A1F2E',
+    // Primary text - white
+    text: '#FFFFFF',
+    // Secondary text - light gray
+    textSecondary: '#B8BCC8',
+    // Muted text - darker gray
+    textMuted: '#6B7280',
+    // Input backgrounds - dark gray
+    inputBackground: '#2D3748',
+    // Input borders - slightly lighter gray
+    inputBorder: '#4A5568',
+    // Disabled input background - darker
+    inputDisabled: '#1A202C',
+    // Accent colors
+    accent: '#3B82F6', // Blue
+    success: '#10B981', // Green
+    warning: '#F59E0B', // Orange/Yellow
+    error: '#EF4444', // Red
+    // Tab bar
+    tabBarBackground: '#000000',
+    tabBarBorder: '#333333',
+    tabIconDefault: '#FFFFFF',
+    tabIconSelected: '#FFFFFF',
+    // Legacy properties for compatibility
+    tint: '#FFFFFF',
+    icon: '#FFFFFF',
   },
 };
 

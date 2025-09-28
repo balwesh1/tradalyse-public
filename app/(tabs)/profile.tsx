@@ -570,7 +570,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#0A0E1A',
   },
   scrollView: {
     flex: 1,
@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#94A3B8',
+    color: '#B8BCC8',
     marginTop: 16,
     fontSize: 16,
   },
@@ -595,11 +595,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#F8FAFC',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   subtitle: {
-    color: '#94A3B8',
+    color: '#B8BCC8',
     fontSize: 16,
   },
   mainContent: {
@@ -608,7 +608,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   profileCard: {
-    backgroundColor: '#1E293B',
+    backgroundColor: '#1A1F2E',
     borderRadius: 16,
     padding: 20,
     shadowColor: '#000',
@@ -629,7 +629,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#F8FAFC',
+    color: '#FFFFFF',
   },
   profileActions: {
     flexDirection: 'row',
@@ -641,10 +641,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#475569',
+    borderColor: '#4A5568',
   },
   editButtonText: {
-    color: '#F8FAFC',
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -665,10 +665,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#475569',
+    borderColor: '#4A5568',
   },
   cancelButtonText: {
-    color: '#F8FAFC',
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -697,7 +697,7 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#F8FAFC',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   proTag: {
@@ -711,7 +711,7 @@ const styles = StyleSheet.create({
   },
   userEmail: {
     fontSize: 16,
-    color: '#94A3B8',
+    color: '#B8BCC8',
   },
   formSection: {
     gap: 16,
@@ -726,26 +726,26 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#E2E8F0',
+    color: '#B8BCC8',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#334155',
+    backgroundColor: '#2D3748',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    color: '#F8FAFC',
+    color: '#FFFFFF',
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#475569',
+    borderColor: '#4A5568',
   },
   inputDisabled: {
-    backgroundColor: '#1E293B',
-    borderColor: '#334155',
-    color: '#94A3B8',
+    backgroundColor: '#1A202C',
+    borderColor: '#2D3748',
+    color: '#6B7280',
   },
   statsCard: {
-    backgroundColor: '#1E293B',
+    backgroundColor: '#1A1F2E',
     borderRadius: 16,
     padding: 20,
     shadowColor: '#000',
@@ -771,18 +771,18 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 14,
-    color: '#94A3B8',
+    color: '#B8BCC8',
     marginBottom: 8,
   },
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#F8FAFC',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   statSubtext: {
     fontSize: 12,
-    color: '#64748B',
+    color: '#6B7280',
   },
   signOutButton: {
     backgroundColor: '#EF4444',
@@ -808,12 +808,12 @@ const styles = StyleSheet.create({
   emptyStatsTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#F8FAFC',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   emptyStatsMessage: {
     fontSize: 14,
-    color: '#94A3B8',
+    color: '#B8BCC8',
     textAlign: 'center',
     lineHeight: 20,
     paddingHorizontal: 16,
@@ -837,7 +837,7 @@ const styles = StyleSheet.create({
   },
   // Security Settings styles
   securityCard: {
-    backgroundColor: '#1E293B',
+    backgroundColor: '#1A1F2E',
     borderRadius: 16,
     padding: 20,
     shadowColor: '#000',
@@ -861,10 +861,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#475569',
+    borderColor: '#4A5568',
   },
   changePasswordButtonText: {
-    color: '#F8FAFC',
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -875,7 +875,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   passwordErrorText: {
-    color: '#F87171',
+    color: '#EF4444',
     fontSize: 14,
     marginTop: 8,
     textAlign: 'center',
