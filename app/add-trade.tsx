@@ -41,7 +41,6 @@ export default function AddTradeScreen() {
   
   // Modal states
   const [showAssetTypeModal, setShowAssetTypeModal] = useState(false);
-  const [showStrategyModal, setShowStrategyModal] = useState(false);
   const [showEntryDateModal, setShowEntryDateModal] = useState(false);
   const [showExitDateModal, setShowExitDateModal] = useState(false);
   
@@ -583,20 +582,32 @@ export default function AddTradeScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Strategy and Tags</Text>
               
-              <View style={styles.formRow}>
+              {strategies.length > 0 && (
                 <View style={styles.formField}>
                   <Text style={styles.fieldLabel}>Strategy</Text>
-                  <TouchableOpacity
-                    style={styles.dropdown}
-                    onPress={() => setShowStrategyModal(true)}
-                  >
-                    <Text style={styles.dropdownText}>
-                      {selectedStrategy ? strategies.find(s => s.id === selectedStrategy)?.name || 'Select Strategy' : 'None'}
-                    </Text>
-                    <Text style={styles.dropdownArrow}>▼</Text>
-                  </TouchableOpacity>
+                  <View style={styles.tagsContainer}>
+                    {strategies.map((strategy) => (
+                      <TouchableOpacity
+                        key={strategy.id}
+                        style={[
+                          styles.tagButton,
+                          selectedStrategy === strategy.id && styles.tagButtonSelected,
+                          { borderColor: '#3B82F6' }
+                        ]}
+                        onPress={() => setSelectedStrategy(selectedStrategy === strategy.id ? '' : strategy.id)}
+                      >
+                        <View style={[styles.tagColor, { backgroundColor: '#3B82F6' }]} />
+                        <Text style={[
+                          styles.tagButtonText,
+                          selectedStrategy === strategy.id && styles.tagButtonTextSelected
+                        ]}>
+                          {strategy.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
                 </View>
-              </View>
+              )}
 
               {tags.length > 0 && (
                 <View style={styles.formField}>
@@ -696,62 +707,6 @@ export default function AddTradeScreen() {
           </View>
         </Modal>
 
-        {/* Strategy Modal */}
-        <Modal
-          visible={showStrategyModal}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowStrategyModal(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Select Strategy</Text>
-              <TouchableOpacity
-                style={[
-                  styles.modalOption,
-                  !selectedStrategy && styles.modalOptionSelected
-                ]}
-                onPress={() => {
-                  setSelectedStrategy('');
-                  setShowStrategyModal(false);
-                }}
-              >
-                <Text style={[
-                  styles.modalOptionText,
-                  !selectedStrategy && styles.modalOptionTextSelected
-                ]}>
-                  None
-                </Text>
-              </TouchableOpacity>
-              {strategies.map((strategy) => (
-                <TouchableOpacity
-                  key={strategy.id}
-                  style={[
-                    styles.modalOption,
-                    selectedStrategy === strategy.id && styles.modalOptionSelected
-                  ]}
-                  onPress={() => {
-                    setSelectedStrategy(strategy.id);
-                    setShowStrategyModal(false);
-                  }}
-                >
-                  <Text style={[
-                    styles.modalOptionText,
-                    selectedStrategy === strategy.id && styles.modalOptionTextSelected
-                  ]}>
-                    {strategy.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-              <TouchableOpacity
-                style={styles.modalCancelButton}
-                onPress={() => setShowStrategyModal(false)}
-              >
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
 
         {/* Entry Date Modal */}
         <Modal
