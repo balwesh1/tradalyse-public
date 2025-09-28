@@ -273,6 +273,7 @@ export default function AddTradeScreen() {
         stop_loss: formData.stopLoss ? parseFloat(formData.stopLoss) : null,
         standard_lot_size: parseFloat(formData.standardLotSize),
         quantity: parseFloat(formData.quantity),
+        commission: parseFloat(formData.commission) || 0,
         pnl: pnl,
         status: formData.status.toLowerCase(),
         entry_date: formattedEntryDate,
