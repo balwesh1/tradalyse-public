@@ -1,16 +1,16 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 interface Trade {
@@ -110,11 +110,24 @@ export default function TradesScreen() {
     fetchTrades(0, true);
   }, [fetchTrades]);
 
+  // Refresh data when screen comes into focus (e.g., after adding a trade)
+  useFocusEffect(
+    useCallback(() => {
+      fetchTrades(0, true);
+    }, [fetchTrades])
+  );
+
   const loadMoreTrades = useCallback(() => {
     if (!loadingMore && hasMore) {
       fetchTrades(currentPage + 1, false);
     }
   }, [loadingMore, hasMore, currentPage, fetchTrades]);
+
+  const refreshTrades = useCallback(() => {
+    setSelectedTrades([]);
+    setShowBulkActions(false);
+    fetchTrades(0, true);
+  }, [fetchTrades]);
 
   const handleTradeSelect = (tradeId: string) => {
     setSelectedTrades(prev => 
@@ -155,9 +168,7 @@ export default function TradesScreen() {
                 return;
               }
 
-              setSelectedTrades([]);
-              setShowBulkActions(false);
-              fetchTrades(0, true);
+              refreshTrades();
             } catch (error) {
               Alert.alert('Error', 'Failed to delete trades');
             }
@@ -254,9 +265,13 @@ export default function TradesScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Trade History</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.settingsButton}>
-            <Text style={styles.settingsIcon}>⚙️</Text>
+          <TouchableOpacity 
+            style={styles.refreshButton}
+            onPress={refreshTrades}
+          >
+            <Text style={styles.refreshIcon}>🔄</Text>
           </TouchableOpacity>
+          
           
           {selectedTrades.length > 0 && (
             <TouchableOpacity
@@ -381,6 +396,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  refreshButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1A1A1A',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  refreshIcon: {
+    fontSize: 18,
   },
   settingsButton: {
     width: 40,
