@@ -726,7 +726,7 @@ export default function AddTradeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0E1A',
+    backgroundColor: '#000000',
   },
   scrollView: {
     flex: 1,
@@ -751,15 +751,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     marginBottom: 8,
   },
   subtitle: {
-    color: '#B8BCC8',
+    color: '#CCCCCC',
     fontSize: 16,
   },
   section: {
-    backgroundColor: '#1A1F2E',
+    backgroundColor: '#1A1A1A',
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
@@ -775,7 +775,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     marginBottom: 20,
   },
   formRow: {
@@ -789,18 +789,18 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#B8BCC8',
+    color: '#CCCCCC',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#2D3748',
+    backgroundColor: '#2A2A2A',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#4A5568',
+    borderColor: '#555555',
   },
   textArea: {
     height: 100,
@@ -931,14 +931,14 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   saveButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     marginTop: 24,
   },
   saveButtonText: {
-    color: '#FFFFFF',
+    color: '#000000',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -953,7 +953,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#1A1F2E',
+    backgroundColor: '#1A1A1A',
     borderRadius: 16,
     padding: 20,
     width: '80%',
@@ -970,30 +970,30 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     marginBottom: 20,
     textAlign: 'center',
   },
   modalOption: {
-    backgroundColor: '#2D3748',
+    backgroundColor: '#2A2A2A',
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#4A5568',
+    borderColor: '#555555',
   },
   modalOptionSelected: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#FFFFFF',
   },
   modalOptionText: {
-    color: '#B8BCC8',
+    color: '#CCCCCC',
     fontSize: 16,
     textAlign: 'center',
   },
   modalOptionTextSelected: {
-    color: '#FFFFFF',
+    color: '#000000',
     fontWeight: '600',
   },
   modalCancelButton: {
@@ -1003,10 +1003,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginTop: 16,
     borderWidth: 1,
-    borderColor: '#4A5568',
+    borderColor: '#555555',
   },
   modalCancelText: {
-    color: '#B8BCC8',
+    color: '#CCCCCC',
     fontSize: 16,
     textAlign: 'center',
   },

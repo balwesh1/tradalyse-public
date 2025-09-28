@@ -570,7 +570,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0E1A',
+    backgroundColor: '#000000',
   },
   scrollView: {
     flex: 1,
@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#B8BCC8',
+    color: '#CCCCCC',
     marginTop: 16,
     fontSize: 16,
   },
@@ -595,11 +595,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     marginBottom: 8,
   },
   subtitle: {
-    color: '#B8BCC8',
+    color: '#CCCCCC',
     fontSize: 16,
   },
   mainContent: {
@@ -608,7 +608,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   profileCard: {
-    backgroundColor: '#1A1F2E',
+    backgroundColor: '#1A1A1A',
     borderRadius: 16,
     padding: 20,
     shadowColor: '#000',
@@ -629,7 +629,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#E5E5E5',
   },
   profileActions: {
     flexDirection: 'row',
@@ -644,18 +644,18 @@ const styles = StyleSheet.create({
     borderColor: '#4A5568',
   },
   editButtonText: {
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     fontSize: 14,
     fontWeight: '500',
   },
   saveButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
   saveButtonText: {
-    color: '#ffffff',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -668,7 +668,7 @@ const styles = StyleSheet.create({
     borderColor: '#4A5568',
   },
   cancelButtonText: {
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -681,7 +681,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -689,7 +689,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#000000',
   },
   userInfo: {
     flex: 1,
@@ -697,7 +697,7 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     marginBottom: 4,
   },
   proTag: {
@@ -711,7 +711,7 @@ const styles = StyleSheet.create({
   },
   userEmail: {
     fontSize: 16,
-    color: '#B8BCC8',
+    color: '#CCCCCC',
   },
   formSection: {
     gap: 16,
@@ -726,7 +726,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#B8BCC8',
+    color: '#CCCCCC',
     marginBottom: 8,
   },
   input: {
@@ -734,7 +734,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     fontSize: 16,
     borderWidth: 1,
     borderColor: '#4A5568',
@@ -745,7 +745,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   statsCard: {
-    backgroundColor: '#1A1F2E',
+    backgroundColor: '#1A1A1A',
     borderRadius: 16,
     padding: 20,
     shadowColor: '#000',
@@ -771,13 +771,13 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 14,
-    color: '#B8BCC8',
+    color: '#CCCCCC',
     marginBottom: 8,
   },
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     marginBottom: 4,
   },
   statSubtext: {
@@ -792,7 +792,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   signOutText: {
-    color: '#ffffff',
+    color: '#000000',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -808,12 +808,12 @@ const styles = StyleSheet.create({
   emptyStatsTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     marginBottom: 8,
   },
   emptyStatsMessage: {
     fontSize: 14,
-    color: '#B8BCC8',
+    color: '#CCCCCC',
     textAlign: 'center',
     lineHeight: 20,
     paddingHorizontal: 16,
@@ -837,7 +837,7 @@ const styles = StyleSheet.create({
   },
   // Security Settings styles
   securityCard: {
-    backgroundColor: '#1A1F2E',
+    backgroundColor: '#1A1A1A',
     borderRadius: 16,
     padding: 20,
     shadowColor: '#000',
@@ -864,7 +864,7 @@ const styles = StyleSheet.create({
     borderColor: '#4A5568',
   },
   changePasswordButtonText: {
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -881,13 +881,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   updatePasswordButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     paddingVertical: 12,
     marginTop: 16,
   },
   updatePasswordButtonText: {
-    color: '#ffffff',
+    color: '#000000',
     textAlign: 'center',
     fontWeight: '600',
     fontSize: 16,

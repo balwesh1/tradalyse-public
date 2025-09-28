@@ -681,7 +681,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0E1A',
+    backgroundColor: '#000000',
   },
   scrollView: {
     flex: 1,
@@ -696,7 +696,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#B8BCC8',
+    color: '#CCCCCC',
     marginTop: 16,
     fontSize: 16,
   },
@@ -706,15 +706,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     marginBottom: 8,
   },
   subtitle: {
-    color: '#B8BCC8',
+    color: '#CCCCCC',
     fontSize: 16,
   },
   tagsCard: {
-    backgroundColor: '#1A1F2E',
+    backgroundColor: '#1A1A1A',
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
@@ -736,7 +736,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#E5E5E5',
   },
   addTagButton: {
     backgroundColor: 'transparent',
@@ -747,7 +747,7 @@ const styles = StyleSheet.create({
     borderColor: '#4A5568',
   },
   addTagButtonText: {
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -760,18 +760,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     fontSize: 16,
     borderWidth: 1,
     borderColor: '#4A5568',
   },
   createTagButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     paddingVertical: 12,
   },
   createTagButtonText: {
-    color: '#ffffff',
+    color: '#000000',
     textAlign: 'center',
     fontWeight: '600',
     fontSize: 16,
@@ -793,12 +793,12 @@ const styles = StyleSheet.create({
   emptyTagsTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     marginBottom: 8,
   },
   emptyTagsMessage: {
     fontSize: 14,
-    color: '#B8BCC8',
+    color: '#CCCCCC',
     textAlign: 'center',
     lineHeight: 20,
     paddingHorizontal: 16,
@@ -818,7 +818,7 @@ const styles = StyleSheet.create({
   },
   tagName: {
     flex: 1,
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     fontSize: 16,
     fontWeight: '500',
   },
@@ -830,7 +830,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -846,7 +846,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   deleteTagButtonText: {
-    color: '#ffffff',
+    color: '#000000',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -862,7 +862,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     fontSize: 16,
     borderWidth: 1,
     borderColor: '#4A5568',
@@ -880,7 +880,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveEditButtonText: {
-    color: '#ffffff',
+    color: '#000000',
     fontSize: 14,
     fontWeight: 'bold',
   },
@@ -893,12 +893,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelEditButtonText: {
-    color: '#ffffff',
+    color: '#000000',
     fontSize: 14,
     fontWeight: 'bold',
   },
   settingsCard: {
-    backgroundColor: '#1A1F2E',
+    backgroundColor: '#1A1A1A',
     borderRadius: 16,
     padding: 20,
     shadowColor: '#000',
@@ -911,14 +911,14 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   settingsDescription: {
-    color: '#B8BCC8',
+    color: '#CCCCCC',
     fontSize: 14,
     lineHeight: 20,
     marginTop: 8,
   },
   // Strategies styles
   strategiesCard: {
-    backgroundColor: '#1A1F2E',
+    backgroundColor: '#1A1A1A',
     borderRadius: 16,
     padding: 20,
     shadowColor: '#000',
@@ -946,7 +946,7 @@ const styles = StyleSheet.create({
     borderColor: '#4A5568',
   },
   addStrategyButtonText: {
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -959,7 +959,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     fontSize: 16,
     borderWidth: 1,
     borderColor: '#4A5568',
@@ -969,13 +969,13 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   createStrategyButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     paddingVertical: 12,
     marginTop: 8,
   },
   createStrategyButtonText: {
-    color: '#ffffff',
+    color: '#000000',
     textAlign: 'center',
     fontWeight: '600',
     fontSize: 16,
@@ -994,12 +994,12 @@ const styles = StyleSheet.create({
   emptyStrategiesTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     marginBottom: 8,
   },
   emptyStrategiesMessage: {
     fontSize: 14,
-    color: '#B8BCC8',
+    color: '#CCCCCC',
     textAlign: 'center',
     lineHeight: 20,
     paddingHorizontal: 16,
@@ -1032,13 +1032,13 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   strategyName: {
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
   },
   strategyDescription: {
-    color: '#B8BCC8',
+    color: '#CCCCCC',
     fontSize: 14,
     lineHeight: 18,
   },
@@ -1051,7 +1051,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1067,7 +1067,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   deleteStrategyButtonText: {
-    color: '#ffffff',
+    color: '#000000',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -1080,7 +1080,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     fontSize: 16,
     borderWidth: 1,
     borderColor: '#4A5568',

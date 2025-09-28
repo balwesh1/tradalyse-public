@@ -2,11 +2,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
 import React from 'react';
 import {
-    SafeAreaView,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 export default function HomeScreen() {
@@ -18,72 +19,72 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <ScrollView className="flex-1">
-        <View className="px-6 py-8">
+    <SafeAreaView style={styles.container}>
+      <ScrollView style={styles.scrollView}>
+        <View style={styles.content}>
           {/* Header */}
-          <View className="flex-row justify-between items-center mb-8">
+          <View style={styles.header}>
             <View>
-              <Text className="text-2xl font-bold text-gray-900">
+              <Text style={styles.welcomeText}>
                 Welcome back!
               </Text>
-              <Text className="text-gray-600">
+              <Text style={styles.emailText}>
                 {user?.email}
               </Text>
             </View>
             <TouchableOpacity
               onPress={handleSignOut}
-              className="bg-red-500 px-4 py-2 rounded-lg"
+              style={styles.signOutButton}
             >
-              <Text className="text-white font-medium">Sign Out</Text>
+              <Text style={styles.signOutText}>Sign Out</Text>
             </TouchableOpacity>
           </View>
 
           {/* Stats Cards */}
-          <View className="flex-row justify-between mb-8">
-            <View className="bg-white rounded-xl p-4 flex-1 mr-2 shadow-sm">
-              <Text className="text-gray-600 text-sm mb-1">Total Trades</Text>
-              <Text className="text-2xl font-bold text-gray-900">0</Text>
-              <Text className="text-green-500 text-sm">+0% this month</Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>Total Trades</Text>
+              <Text style={styles.statValue}>0</Text>
+              <Text style={styles.statChange}>+0% this month</Text>
             </View>
-            <View className="bg-white rounded-xl p-4 flex-1 ml-2 shadow-sm">
-              <Text className="text-gray-600 text-sm mb-1">Win Rate</Text>
-              <Text className="text-2xl font-bold text-gray-900">0%</Text>
-              <Text className="text-gray-500 text-sm">No trades yet</Text>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>Win Rate</Text>
+              <Text style={styles.statValue}>0%</Text>
+              <Text style={styles.statSubtext}>No trades yet</Text>
             </View>
           </View>
 
-          <View className="flex-row justify-between mb-8">
-            <View className="bg-white rounded-xl p-4 flex-1 mr-2 shadow-sm">
-              <Text className="text-gray-600 text-sm mb-1">P&L</Text>
-              <Text className="text-2xl font-bold text-gray-900">$0.00</Text>
-              <Text className="text-gray-500 text-sm">No trades yet</Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>P&amp;L</Text>
+              <Text style={styles.statValue}>$0.00</Text>
+              <Text style={styles.statSubtext}>No trades yet</Text>
             </View>
-            <View className="bg-white rounded-xl p-4 flex-1 ml-2 shadow-sm">
-              <Text className="text-gray-600 text-sm mb-1">Best Trade</Text>
-              <Text className="text-2xl font-bold text-gray-900">$0.00</Text>
-              <Text className="text-gray-500 text-sm">No trades yet</Text>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>Best Trade</Text>
+              <Text style={styles.statValue}>$0.00</Text>
+              <Text style={styles.statSubtext}>No trades yet</Text>
             </View>
           </View>
 
           {/* Quick Actions */}
-          <View className="mb-8">
-            <Text className="text-xl font-semibold text-gray-900 mb-4">
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
               Quick Actions
             </Text>
-            <View className="space-y-3">
-              <TouchableOpacity className="bg-blue-600 rounded-xl p-4">
-                <Text className="text-white font-semibold text-lg text-center">
+            <View style={styles.actionsContainer}>
+              <TouchableOpacity style={styles.actionButton}>
+                <Text style={styles.actionButtonText}>
                   Add New Trade
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity className="bg-green-600 rounded-xl p-4">
-                <Text className="text-white font-semibold text-lg text-center">
+              <TouchableOpacity style={[styles.actionButton, styles.greenButton]}>
+                <Text style={styles.actionButtonText}>
                   View Trade History
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity className="bg-purple-600 rounded-xl p-4">
-                <Text className="text-white font-semibold text-lg text-center">
+              <TouchableOpacity style={[styles.actionButton, styles.purpleButton]}>
+                <Text style={styles.actionButtonText}>
                   Analytics Dashboard
                 </Text>
               </TouchableOpacity>
@@ -91,15 +92,15 @@ export default function HomeScreen() {
           </View>
 
           {/* Recent Trades */}
-          <View className="mb-8">
-            <Text className="text-xl font-semibold text-gray-900 mb-4">
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
               Recent Trades
             </Text>
-            <View className="bg-white rounded-xl p-6 shadow-sm">
-              <Text className="text-gray-500 text-center">
+            <View style={styles.recentTradesCard}>
+              <Text style={styles.emptyText}>
                 No trades recorded yet
               </Text>
-              <Text className="text-gray-400 text-center text-sm mt-2">
+              <Text style={styles.emptySubtext}>
                 Start by adding your first trade
               </Text>
             </View>
@@ -109,3 +110,134 @@ export default function HomeScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  content: {
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  welcomeText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#E5E5E5',
+  },
+  emailText: {
+    color: '#CCCCCC',
+    marginTop: 4,
+  },
+  signOutButton: {
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  signOutText: {
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 32,
+  },
+  statCard: {
+    backgroundColor: '#1A1A1A',
+    borderRadius: 12,
+    padding: 16,
+    flex: 1,
+    marginHorizontal: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  statLabel: {
+    color: '#CCCCCC',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#E5E5E5',
+    marginBottom: 4,
+  },
+  statChange: {
+    color: '#10B981',
+    fontSize: 14,
+  },
+  statSubtext: {
+    color: '#999999',
+    fontSize: 14,
+  },
+  section: {
+    marginBottom: 32,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#E5E5E5',
+    marginBottom: 16,
+  },
+  actionsContainer: {
+    gap: 12,
+  },
+  actionButton: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 12,
+    padding: 16,
+  },
+  greenButton: {
+    backgroundColor: '#10B981',
+  },
+  purpleButton: {
+    backgroundColor: '#8B5CF6',
+  },
+  actionButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  recentTradesCard: {
+    backgroundColor: '#1A1A1A',
+    borderRadius: 12,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  emptyText: {
+    color: '#999999',
+    textAlign: 'center',
+    fontSize: 16,
+  },
+  emptySubtext: {
+    color: '#666666',
+    textAlign: 'center',
+    fontSize: 14,
+    marginTop: 8,
+  },
+});

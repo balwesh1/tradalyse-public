@@ -21,28 +21,32 @@ export const Colors = {
     tabBarBorder: '#e5e7eb',
   },
   dark: {
-    // Main background - very dark blue-black
-    background: '#0A0E1A',
-    // Card backgrounds - dark blue-gray
-    cardBackground: '#1A1F2E',
-    // Primary text - white
-    text: '#FFFFFF',
-    // Secondary text - light gray
-    textSecondary: '#B8BCC8',
+    // Main background - pure black
+    background: '#000000',
+    // Card backgrounds - very dark gray
+    cardBackground: '#1A1A1A',
+    // Primary text - light gray with white shade
+    text: '#E5E5E5',
+    // Secondary text - medium gray
+    textSecondary: '#CCCCCC',
     // Muted text - darker gray
-    textMuted: '#6B7280',
+    textMuted: '#999999',
     // Input backgrounds - dark gray
-    inputBackground: '#2D3748',
-    // Input borders - slightly lighter gray
-    inputBorder: '#4A5568',
+    inputBackground: '#2A2A2A',
+    // Input borders - medium gray
+    inputBorder: '#555555',
     // Disabled input background - darker
-    inputDisabled: '#1A202C',
+    inputDisabled: '#1A1A1A',
+    // Button colors - white/off-white
+    buttonBackground: '#FFFFFF',
+    buttonText: '#000000',
+    buttonSecondary: '#F5F5F5',
     // Accent colors
-    accent: '#3B82F6', // Blue
+    accent: '#FFFFFF', // White
     success: '#10B981', // Green
     warning: '#F59E0B', // Orange/Yellow
     error: '#EF4444', // Red
-    // Tab bar
+    // Tab bar - pure black
     tabBarBackground: '#000000',
     tabBarBorder: '#333333',
     tabIconDefault: '#FFFFFF',

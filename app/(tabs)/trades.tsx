@@ -24,7 +24,7 @@ export default function TradesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0E1A',
+    backgroundColor: '#000000',
   },
   content: {
     flex: 1,
@@ -35,11 +35,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     marginBottom: 16,
   },
   subtitle: {
-    color: '#B8BCC8',
+    color: '#CCCCCC',
     textAlign: 'center',
   },
   fab: {
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   fabText: {
-    color: '#FFFFFF',
+    color: '#000000',
     fontSize: 24,
     fontWeight: 'bold',
   },
