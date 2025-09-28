@@ -1,6 +1,3 @@
-Home page color is bit off. need to be fixed.
-
-
 Let's modify the Trade History page to show the trades from database. Layout should look like as an attached image but match the styles as per our theme.
 
 Keep in mind the following:
