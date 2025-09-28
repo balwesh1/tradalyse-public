@@ -1,3 +1,4 @@
+### Instructions ###
 Let's start creating the Add New Trade page in which user could enter the trade information. Trade page will have two sections
 1 - One section to enter the trade manually.
 2 - Import Page in which user could upload the trade data using a csv file or importer api for example for Interactive broker or other broker.
@@ -17,12 +18,12 @@ in the manual trading page add the following field:
         Entry Price = 1.50
         Total purchase Cost  1.50 * 100 = 150
         Exit Price = 2.00
-        Total Selling Cost  2.00 * 100 = 200
+        Total Selling Costr  2.00 * 100 = 200
         Stop Loss = 0.50
         Total Cost  0.50 * 100 = 50
         When saving the data, in the database Trade Profit will be calcualted as (Total Selling Cost - Total Cost) i.e. 200 - 150 = 50
     Trade Entry Date (Calendar, Default Current Date)
-    Trade Exit Date (Calendar)
+    Trade Exit Date (Calendar). If trade exit date is missing then trade status will default to open which means final Profit or loss will not be calculated.
     Trade Status (Open Or Close). Based on the trade Status Profit or loss should be calcualted.
     Strategy : Pulled From the Stratgey database entries created by the user. Default to None
     Tags: Optional, pulled from the database and ability to pick the desired tags
