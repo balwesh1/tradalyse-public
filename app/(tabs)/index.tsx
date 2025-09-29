@@ -1,21 +1,211 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { router } from 'expo-router';
-import React from 'react';
+import { supabase } from '@/lib/supabase';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+
+interface TradingStats {
+  totalTrades: number;
+  winRate: number;
+  totalPnl: number;
+  bestTrade: number;
+  monthlyChange: number;
+  monthlyTrades: number;
+}
+
+interface Trade {
+  id: string;
+  symbol: string;
+  side: string;
+  trade_type: string;
+  asset_type: string;
+  entry_price: number;
+  exit_price: number | null;
+  stop_loss: number | null;
+  standard_lot_size: number;
+  quantity: number;
+  commission: number;
+  pnl: number | null;
+  status: string;
+  entry_date: string;
+  exit_date: string | null;
+  strategy_id: string | null;
+  tags: string[] | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 export default function HomeScreen() {
   const { user, signOut } = useAuth();
+  const [stats, setStats] = useState<TradingStats>({
+    totalTrades: 0,
+    winRate: 0,
+    totalPnl: 0,
+    bestTrade: 0,
+    monthlyChange: 0,
+    monthlyTrades: 0,
+  });
+  const [recentTrades, setRecentTrades] = useState<Trade[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchRecentTrades = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('trades')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('entry_date', { ascending: false })
+        .limit(5);
+
+      if (error) {
+        console.error('Error fetching recent trades:', error);
+        return;
+      }
+
+      setRecentTrades(data || []);
+    } catch (error) {
+      console.error('Error fetching recent trades:', error);
+    }
+  }, [user]);
+
+  const fetchTradingStats = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      
+      // Fetch recent trades
+      await fetchRecentTrades();
+      
+      // Get current month start date
+      const now = new Date();
+      const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+
+      // Fetch all trades
+      const { data: allTrades, error: allTradesError } = await supabase
+        .from('trades')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (allTradesError) {
+        console.error('Error fetching all trades:', allTradesError);
+        return;
+      }
+
+      // Fetch current month trades
+      const { data: currentMonthTrades, error: currentMonthError } = await supabase
+        .from('trades')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('entry_date', currentMonthStart.toISOString());
+
+      if (currentMonthError) {
+        console.error('Error fetching current month trades:', currentMonthError);
+        return;
+      }
+
+      // Fetch last month trades
+      const { data: lastMonthTrades, error: lastMonthError } = await supabase
+        .from('trades')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('entry_date', lastMonthStart.toISOString())
+        .lte('entry_date', lastMonthEnd.toISOString());
+
+      if (lastMonthError) {
+        console.error('Error fetching last month trades:', lastMonthError);
+        return;
+      }
+
+      const trades = allTrades || [];
+      const currentMonth = currentMonthTrades || [];
+      const lastMonth = lastMonthTrades || [];
+
+      // Calculate statistics
+      const totalTrades = trades.length;
+      const closedTrades = trades.filter(trade => trade.status === 'closed' && trade.pnl !== null);
+      const winningTrades = closedTrades.filter(trade => trade.pnl > 0);
+      const winRate = closedTrades.length > 0 ? (winningTrades.length / closedTrades.length) * 100 : 0;
+      
+      const totalPnl = closedTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
+      const bestTrade = closedTrades.length > 0 ? Math.max(...closedTrades.map(trade => trade.pnl || 0)) : 0;
+      
+      const monthlyTrades = currentMonth.length;
+      const monthlyChange = lastMonth.length > 0 ? ((monthlyTrades - lastMonth.length) / lastMonth.length) * 100 : 0;
+
+      setStats({
+        totalTrades,
+        winRate,
+        totalPnl,
+        bestTrade,
+        monthlyChange,
+        monthlyTrades,
+      });
+    } catch (error) {
+      console.error('Error calculating trading stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, fetchRecentTrades]);
+
+  useEffect(() => {
+    fetchTradingStats();
+  }, [fetchTradingStats]);
+
+  // Refresh data when screen comes into focus (e.g., after adding a trade)
+  useFocusEffect(
+    useCallback(() => {
+      fetchTradingStats();
+    }, [fetchTradingStats])
+  );
 
   const handleSignOut = async () => {
     await signOut();
     router.replace('/signin');
+  };
+
+  // Utility functions for formatting
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const formatPrice = (price: number) => {
+    return `$${price.toFixed(2)}`;
+  };
+
+  const getStatusColor = (status: string) => {
+    return status === 'closed' ? '#10B981' : '#F59E0B';
+  };
+
+  const getStatusText = (status: string) => {
+    return status === 'closed' ? 'CLOSED' : 'OPEN';
+  };
+
+  const getPnLColor = (pnl: number | null) => {
+    if (pnl === null) return '#CCCCCC';
+    return pnl >= 0 ? '#10B981' : '#EF4444';
+  };
+
+  const handleTradePress = (trade: Trade) => {
+    router.push(`/trade-details/${trade.id}`);
   };
 
   return (
@@ -25,64 +215,164 @@ export default function HomeScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View>
-              <Text style={styles.welcomeText}>Welcome back!</Text>
-              <Text style={styles.emailText}>{user?.email}</Text>
+              <Text style={styles.welcomeText}>
+                Welcome back!
+              </Text>
+              <Text style={styles.emailText}>
+                {user?.email}
+              </Text>
             </View>
-            <TouchableOpacity onPress={handleSignOut} style={styles.signOutButton}>
+            <TouchableOpacity
+              onPress={handleSignOut}
+              style={styles.signOutButton}
+            >
               <Text style={styles.signOutText}>Sign Out</Text>
             </TouchableOpacity>
           </View>
 
           {/* Stats Cards */}
-          <View style={styles.statsRow}>
-            <View style={[styles.statCard, styles.statCardLeft]}>
-              <Text style={styles.statLabel}>Total Trades</Text>
-              <Text style={styles.statValue}>0</Text>
-              <Text style={styles.statChange}>+0% this month</Text>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#E5E5E5" />
+              <Text style={styles.loadingText}>Loading statistics...</Text>
             </View>
-            <View style={[styles.statCard, styles.statCardRight]}>
-              <Text style={styles.statLabel}>Win Rate</Text>
-              <Text style={styles.statValue}>0%</Text>
-              <Text style={styles.statSubtext}>No trades yet</Text>
-            </View>
-          </View>
+          ) : (
+            <>
+              <View style={styles.statsRow}>
+                <View style={styles.statCard}>
+                  <Text style={styles.statLabel}>Total Trades</Text>
+                  <Text style={styles.statValue}>{stats.totalTrades}</Text>
+                  <Text style={styles.statChange}>
+                    {stats.monthlyChange >= 0 ? '+' : ''}{stats.monthlyChange.toFixed(1)}% this month
+                  </Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statLabel}>Win Rate</Text>
+                  <Text style={styles.statValue}>{stats.winRate.toFixed(1)}%</Text>
+                  <Text style={styles.statChange}>
+                    {stats.monthlyTrades} trades this month
+                  </Text>
+                </View>
+              </View>
 
-          <View style={styles.statsRow}>
-            <View style={[styles.statCard, styles.statCardLeft]}>
-              <Text style={styles.statLabel}>P&L</Text>
-              <Text style={styles.statValue}>$0.00</Text>
-              <Text style={styles.statSubtext}>No trades yet</Text>
-            </View>
-            <View style={[styles.statCard, styles.statCardRight]}>
-              <Text style={styles.statLabel}>Best Trade</Text>
-              <Text style={styles.statValue}>$0.00</Text>
-              <Text style={styles.statSubtext}>No trades yet</Text>
-            </View>
-          </View>
+              <View style={styles.statsRow}>
+                <View style={styles.statCard}>
+                  <Text style={styles.statLabel}>P&amp;L</Text>
+                  <Text style={[styles.statValue, { color: stats.totalPnl >= 0 ? '#10B981' : '#EF4444' }]}>
+                    ${stats.totalPnl.toFixed(2)}
+                  </Text>
+                  <Text style={styles.statChange}>
+                    {stats.totalPnl >= 0 ? 'Profit' : 'Loss'}
+                  </Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statLabel}>Best Trade</Text>
+                  <Text style={[styles.statValue, { color: stats.bestTrade >= 0 ? '#10B981' : '#EF4444' }]}>
+                    ${stats.bestTrade.toFixed(2)}
+                  </Text>
+                  <Text style={styles.statChange}>
+                    {stats.bestTrade >= 0 ? 'Highest profit' : 'Best loss'}
+                  </Text>
+                </View>
+              </View>
+            </>
+          )}
 
           {/* Quick Actions */}
-          <View style={styles.quickActions}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
-            <View style={styles.actionButtons}>
-              <TouchableOpacity style={[styles.actionButton, styles.blueButton]}>
-                <Text style={styles.actionButtonText}>Add New Trade</Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              Quick Actions
+            </Text>
+            <View style={styles.actionsContainer}>
+              <TouchableOpacity style={styles.actionButton}>
+                <Text style={styles.actionButtonText}>
+                  Add New Trade
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.actionButton, styles.greenButton]}>
-                <Text style={styles.actionButtonText}>View Trade History</Text>
+                <Text style={styles.actionButtonText}>
+                  View Trade History
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.actionButton, styles.purpleButton]}>
-                <Text style={styles.actionButtonText}>Analytics Dashboard</Text>
+                <Text style={styles.actionButtonText}>
+                  Analytics Dashboard
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Recent Trades */}
-          <View style={styles.recentTrades}>
-            <Text style={styles.sectionTitle}>Recent Trades</Text>
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No trades recorded yet</Text>
-              <Text style={styles.emptyStateSubtext}>Start by adding your first trade</Text>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>
+                Recent Trades
+              </Text>
+              <TouchableOpacity 
+                onPress={() => router.push('/(tabs)/trades')}
+                style={styles.viewAllLink}
+              >
+                <Text style={styles.viewAllLinkText}>View All</Text>
+              </TouchableOpacity>
             </View>
+            
+            {loading ? (
+              <View style={styles.recentTradesCard}>
+                <ActivityIndicator size="small" color="#E5E5E5" />
+                <Text style={styles.emptyText}>Loading recent trades...</Text>
+              </View>
+            ) : recentTrades.length === 0 ? (
+              <View style={styles.recentTradesCard}>
+                <Text style={styles.emptyText}>
+                  No trades recorded yet
+                </Text>
+                <Text style={styles.emptySubtext}>
+                  Start by adding your first trade
+                </Text>
+                <TouchableOpacity 
+                  style={styles.viewAllButton}
+                  onPress={() => router.push('/add-trade')}
+                >
+                  <Text style={styles.viewAllButtonText}>Add Trade</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.recentTradesCard}>
+                {/* Table Header */}
+                <View style={styles.tableHeader}>
+                  <Text style={styles.headerText}>Open Date</Text>
+                  <Text style={styles.headerText}>Symbol</Text>
+                  <Text style={styles.headerText}>Status</Text>
+                  <Text style={styles.headerText}>Entry Price</Text>
+                  <Text style={styles.headerText}>Exit Price</Text>
+                  <Text style={styles.headerText}>P&L</Text>
+                </View>
+                
+                {/* Trade Rows */}
+                {recentTrades.map((trade) => (
+                  <TouchableOpacity
+                    key={trade.id}
+                    style={styles.tradeRow}
+                    onPress={() => handleTradePress(trade)}
+                  >
+                    <Text style={styles.cellText}>{formatDate(trade.entry_date)}</Text>
+                    <Text style={styles.cellText}>{trade.symbol}</Text>
+                    
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(trade.status) }]}>
+                      <Text style={styles.statusText}>{getStatusText(trade.status)}</Text>
+                    </View>
+                    
+                    <Text style={styles.cellText}>{formatPrice(trade.entry_price)}</Text>
+                    <Text style={styles.cellText}>
+                      {trade.exit_price ? formatPrice(trade.exit_price) : '-'}
+                    </Text>
+                    <Text style={[styles.cellText, { color: getPnLColor(trade.pnl) }]}>
+                      {trade.pnl !== null ? formatPrice(trade.pnl) : '-'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -93,7 +383,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#000000',
   },
   scrollView: {
     flex: 1,
@@ -111,10 +401,11 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#F8FAFC',
+    color: '#E5E5E5',
   },
   emailText: {
-    color: '#94A3B8',
+    color: '#CCCCCC',
+    marginTop: 4,
   },
   signOutButton: {
     backgroundColor: '#EF4444',
@@ -123,7 +414,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   signOutText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
     fontWeight: '500',
   },
   statsRow: {
@@ -132,98 +423,177 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   statCard: {
-    backgroundColor: '#1E293B',
+    backgroundColor: '#1A1A1A',
     borderRadius: 12,
     padding: 16,
     flex: 1,
+    marginHorizontal: 4,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 4,
     },
     shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 3,
-  },
-  statCardLeft: {
-    marginRight: 8,
-  },
-  statCardRight: {
-    marginLeft: 8,
+    shadowRadius: 8,
+    elevation: 8,
   },
   statLabel: {
-    color: '#94A3B8',
+    color: '#CCCCCC',
     fontSize: 14,
     marginBottom: 4,
   },
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#F8FAFC',
+    color: '#E5E5E5',
+    marginBottom: 4,
   },
   statChange: {
     color: '#10B981',
     fontSize: 14,
   },
   statSubtext: {
-    color: '#94A3B8',
+    color: '#999999',
     fontSize: 14,
   },
-  quickActions: {
+  section: {
     marginBottom: 32,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#F8FAFC',
+    color: '#E5E5E5',
     marginBottom: 16,
   },
-  actionButtons: {
+  actionsContainer: {
     gap: 12,
   },
   actionButton: {
+    backgroundColor: '#3B82F6',
     borderRadius: 12,
     padding: 16,
-  },
-  blueButton: {
-    backgroundColor: '#3B82F6',
   },
   greenButton: {
     backgroundColor: '#10B981',
   },
   purpleButton: {
-    backgroundColor: '#7C3AED',
+    backgroundColor: '#8B5CF6',
   },
   actionButtonText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
     fontWeight: '600',
     fontSize: 18,
     textAlign: 'center',
   },
-  recentTrades: {
-    marginBottom: 32,
-  },
-  emptyState: {
-    backgroundColor: '#1E293B',
+  recentTradesCard: {
+    backgroundColor: '#1A1A1A',
     borderRadius: 12,
     padding: 24,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 4,
     },
     shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  emptyStateText: {
-    color: '#94A3B8',
+  emptyText: {
+    color: '#999999',
     textAlign: 'center',
+    fontSize: 16,
   },
-  emptyStateSubtext: {
-    color: '#64748B',
+  emptySubtext: {
+    color: '#666666',
     textAlign: 'center',
     fontSize: 14,
     marginTop: 8,
+  },
+  loadingContainer: {
+    backgroundColor: '#1A1A1A',
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 120,
+  },
+  loadingText: {
+    color: '#CCCCCC',
+    fontSize: 16,
+    marginTop: 12,
+  },
+  viewAllButton: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  viewAllButtonText: {
+    color: '#000000',
+    fontWeight: '600',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  viewAllLink: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  viewAllLinkText: {
+    color: '#10B981',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#262626',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  headerText: {
+    color: '#CCCCCC',
+    fontSize: 12,
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'center',
+  },
+  tradeRow: {
+    flexDirection: 'row',
+    backgroundColor: '#0F0F0F',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 4,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#1A1A1A',
+  },
+  cellText: {
+    color: '#E5E5E5',
+    fontSize: 12,
+    flex: 1,
+    textAlign: 'center',
+  },
+  statusBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginHorizontal: 2,
+    minWidth: 60,
+  },
+  statusText: {
+    color: '#FFFFFF',
+    alignItems: 'center',
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
