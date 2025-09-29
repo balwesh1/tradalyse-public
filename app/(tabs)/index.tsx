@@ -58,6 +58,12 @@ interface DailyPnL {
   tradeCount: number;
 }
 
+interface PnLDataPoint {
+  date: string;
+  dailyPnL: number;
+  cumulativePnL: number;
+}
+
 // Enhanced Circular Progress Component
 const CircularProgress = ({ percentage, size = 60, strokeWidth = 6, color = '#10B981', showGlow = true }: {
   percentage: number;
@@ -180,6 +186,366 @@ const HorizontalBarChart = ({
   );
 };
 
+// Cumulative P&L Area Chart Component
+const CumulativePnLChart = ({ data, width = 300, height = 200 }: {
+  data: PnLDataPoint[];
+  width?: number;
+  height?: number;
+}) => {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  if (!data || data.length === 0) {
+    return (
+      <View style={{ width, height, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: '#999999', fontSize: 14 }}>No data available</Text>
+      </View>
+    );
+  }
+
+  const maxValue = Math.max(...data.map(d => d.cumulativePnL));
+  const minValue = Math.min(...data.map(d => d.cumulativePnL));
+  const range = maxValue - minValue;
+  const padding = 60; // Increased padding for better label positioning
+
+  const getY = (value: number) => {
+    if (range === 0) return height / 2;
+    return height - padding - ((value - minValue) / range) * (height - 2 * padding);
+  };
+
+  const getX = (index: number) => {
+    return padding + (index / (data.length - 1)) * (width - 2 * padding);
+  };
+
+  return (
+    <View style={{ width, height, position: 'relative' }}>
+      {/* Grid lines */}
+      <View style={{
+        position: 'absolute',
+        top: padding,
+        left: padding,
+        right: padding,
+        bottom: padding,
+        borderWidth: 1,
+        borderColor: '#333333',
+      }}>
+        {/* Horizontal grid lines */}
+        {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => (
+          <View
+            key={i}
+            style={{
+              position: 'absolute',
+              top: ratio * (height - 2 * padding),
+              left: 0,
+              right: 0,
+              height: 1,
+              backgroundColor: '#333333',
+              opacity: 0.3,
+            }}
+          />
+        ))}
+      </View>
+
+
+      {/* Line */}
+      <View style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+      }}>
+        {data.map((point, index) => {
+          if (index === 0) return null;
+          const prevPoint = data[index - 1];
+          const x1 = getX(index - 1);
+          const y1 = getY(prevPoint.cumulativePnL);
+          const x2 = getX(index);
+          const y2 = getY(point.cumulativePnL);
+          
+          return (
+            <View
+              key={index}
+              style={{
+                position: 'absolute',
+                left: x1,
+                top: y1,
+                width: Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2)),
+                height: 2,
+                backgroundColor: '#FFFFFF',
+                transform: [{ rotate: `${Math.atan2(y2 - y1, x2 - x1)}rad` }],
+                transformOrigin: '0 0',
+              }}
+            />
+          );
+        })}
+      </View>
+
+      {/* Interactive touch points */}
+      {data.map((point, index) => {
+        const x = getX(index);
+        const y = getY(point.cumulativePnL);
+        
+        return (
+          <TouchableOpacity
+            key={`touch-${index}`}
+            style={{
+              position: 'absolute',
+              left: x - 8,
+              top: y - 8,
+              width: 16,
+              height: 16,
+              borderRadius: 8,
+              backgroundColor: hoveredIndex === index ? '#FFFFFF' : 'transparent',
+              borderWidth: 2,
+              borderColor: '#FFFFFF',
+              zIndex: 10,
+            }}
+            onPressIn={() => setHoveredIndex(index)}
+            onPressOut={() => setHoveredIndex(null)}
+          />
+        );
+      })}
+
+      {/* Tooltip */}
+      {hoveredIndex !== null && (
+        <View style={{
+          position: 'absolute',
+          left: getX(hoveredIndex) - 50,
+          top: getY(data[hoveredIndex].cumulativePnL) - 40,
+          backgroundColor: '#1A1A1A',
+          padding: 8,
+          borderRadius: 6,
+          borderWidth: 1,
+          borderColor: '#333333',
+          zIndex: 20,
+        }}>
+          <Text style={{ color: '#E5E5E5', fontSize: 12, fontWeight: '600' }}>
+            {new Date(data[hoveredIndex].date).toLocaleDateString()}
+          </Text>
+          <Text style={{ color: '#FFFFFF', fontSize: 12 }}>
+            ${data[hoveredIndex].cumulativePnL.toFixed(2)}
+          </Text>
+        </View>
+      )}
+
+      {/* Y-axis labels */}
+      <View style={{ position: 'absolute', left: 0, top: padding, bottom: padding, width: padding }}>
+        {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
+          const value = minValue + (1 - ratio) * range;
+          return (
+            <Text
+              key={i}
+              style={{
+                position: 'absolute',
+                top: ratio * (height - 2 * padding) - 8,
+                right: 4,
+                color: '#999999',
+                fontSize: 10,
+              }}
+            >
+              ${value.toFixed(0)}
+            </Text>
+          );
+        })}
+      </View>
+
+      {/* X-axis labels */}
+      <View style={{ position: 'absolute', left: padding, right: padding, bottom: 0, height: padding }}>
+        {data.filter((_, i) => i % Math.ceil(data.length / 4) === 0).map((point, i) => {
+          const index = i * Math.ceil(data.length / 4);
+          const x = getX(index);
+          return (
+            <Text
+              key={i}
+              style={{
+                position: 'absolute',
+                left: x - 30,
+                top: 4,
+                color: '#999999',
+                fontSize: 10,
+                width: 60,
+                textAlign: 'center',
+              }}
+            >
+              {new Date(point.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            </Text>
+          );
+        })}
+      </View>
+    </View>
+  );
+};
+
+// Daily P&L Bar Chart Component
+const DailyPnLChart = ({ data, width = 300, height = 200 }: {
+  data: PnLDataPoint[];
+  width?: number;
+  height?: number;
+}) => {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  if (!data || data.length === 0) {
+    return (
+      <View style={{ width, height, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: '#999999', fontSize: 14 }}>No data available</Text>
+      </View>
+    );
+  }
+
+  const maxValue = Math.max(...data.map(d => Math.abs(d.dailyPnL)));
+  const padding = 60; // Increased padding for better label positioning
+  const barWidth = (width - 2 * padding) / data.length;
+
+  const getBarHeight = (value: number) => {
+    if (maxValue === 0) return 0;
+    return (Math.abs(value) / maxValue) * (height - 2 * padding);
+  };
+
+  const getBarY = (value: number) => {
+    const barHeight = getBarHeight(value);
+    const zeroLine = height - padding - (height - 2 * padding) / 2;
+    return value >= 0 ? zeroLine - barHeight : zeroLine;
+  };
+
+  return (
+    <View style={{ width, height, position: 'relative' }}>
+      {/* Grid lines */}
+      <View style={{
+        position: 'absolute',
+        top: padding,
+        left: padding,
+        right: padding,
+        bottom: padding,
+        borderWidth: 1,
+        borderColor: '#333333',
+      }}>
+        {/* Horizontal grid lines */}
+        {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => (
+          <View
+            key={i}
+            style={{
+              position: 'absolute',
+              top: ratio * (height - 2 * padding),
+              left: 0,
+              right: 0,
+              height: 1,
+              backgroundColor: '#333333',
+              opacity: 0.3,
+            }}
+          />
+        ))}
+        {/* Zero line */}
+        <View
+          style={{
+            position: 'absolute',
+            top: (height - 2 * padding) / 2,
+            left: 0,
+            right: 0,
+            height: 1,
+            backgroundColor: '#666666',
+            opacity: 0.5,
+          }}
+        />
+      </View>
+
+      {/* Bars */}
+      {data.map((point, index) => {
+        const barHeight = getBarHeight(point.dailyPnL);
+        const barY = getBarY(point.dailyPnL);
+        const x = padding + index * barWidth;
+        
+        return (
+          <TouchableOpacity
+            key={index}
+            style={{
+              position: 'absolute',
+              left: x,
+              top: barY,
+              width: barWidth * 0.8,
+              height: barHeight,
+              backgroundColor: point.dailyPnL >= 0 ? '#10B981' : '#EF4444',
+              opacity: hoveredIndex === index ? 1.0 : 0.8,
+              zIndex: 5,
+            }}
+            onPressIn={() => setHoveredIndex(index)}
+            onPressOut={() => setHoveredIndex(null)}
+          />
+        );
+      })}
+
+      {/* Tooltip */}
+      {hoveredIndex !== null && (
+        <View style={{
+          position: 'absolute',
+          left: padding + hoveredIndex * barWidth - 50,
+          top: getBarY(data[hoveredIndex].dailyPnL) - 40,
+          backgroundColor: '#1A1A1A',
+          padding: 8,
+          borderRadius: 6,
+          borderWidth: 1,
+          borderColor: '#333333',
+          zIndex: 20,
+        }}>
+          <Text style={{ color: '#E5E5E5', fontSize: 12, fontWeight: '600' }}>
+            {new Date(data[hoveredIndex].date).toLocaleDateString()}
+          </Text>
+          <Text style={{ 
+            color: data[hoveredIndex].dailyPnL >= 0 ? '#10B981' : '#EF4444', 
+            fontSize: 12 
+          }}>
+            ${data[hoveredIndex].dailyPnL.toFixed(2)}
+          </Text>
+        </View>
+      )}
+
+      {/* Y-axis labels */}
+      <View style={{ position: 'absolute', left: 0, top: padding, bottom: padding, width: padding }}>
+        {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
+          const value = (1 - ratio) * maxValue;
+          return (
+            <Text
+              key={i}
+              style={{
+                position: 'absolute',
+                top: ratio * (height - 2 * padding) - 8,
+                right: 4,
+                color: '#999999',
+                fontSize: 10,
+              }}
+            >
+              ${value.toFixed(0)}
+            </Text>
+          );
+        })}
+      </View>
+
+      {/* X-axis labels */}
+      <View style={{ position: 'absolute', left: padding, right: padding, bottom: 0, height: padding }}>
+        {data.filter((_, i) => i % Math.ceil(data.length / 4) === 0).map((point, i) => {
+          const index = i * Math.ceil(data.length / 4);
+          const x = padding + index * barWidth;
+          return (
+            <Text
+              key={i}
+              style={{
+                position: 'absolute',
+                left: x - 30,
+                top: 4,
+                color: '#999999',
+                fontSize: 10,
+                width: 60,
+                textAlign: 'center',
+              }}
+            >
+              {new Date(point.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            </Text>
+          );
+        })}
+      </View>
+    </View>
+  );
+};
+
 export default function HomeScreen() {
   const { user, signOut } = useAuth();
   const [stats, setStats] = useState<TradingStats>({
@@ -199,6 +565,7 @@ export default function HomeScreen() {
   });
   const [recentTrades, setRecentTrades] = useState<Trade[]>([]);
   const [dailyPnLData, setDailyPnLData] = useState<DailyPnL[]>([]);
+  const [pnlChartData, setPnLChartData] = useState<PnLDataPoint[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [screenWidth, setScreenWidth] = useState(Dimensions.get('window').width);
@@ -270,15 +637,67 @@ export default function HomeScreen() {
     }
   }, [user, currentMonth]);
 
+  const fetchPnLChartData = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      // Get all closed trades from the last 6 months
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+      const { data, error } = await supabase
+        .from('trades')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'closed')
+        .gte('entry_date', sixMonthsAgo.toISOString())
+        .not('pnl', 'is', null)
+        .order('entry_date', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching P&L chart data:', error);
+        return;
+      }
+
+      // Group trades by date and calculate daily P&L
+      const dailyData: { [key: string]: number } = {};
+      
+      (data || []).forEach(trade => {
+        const tradeDate = new Date(trade.entry_date).toISOString().split('T')[0];
+        dailyData[tradeDate] = (dailyData[tradeDate] || 0) + (trade.pnl || 0);
+      });
+
+      // Convert to array and calculate cumulative P&L
+      const sortedDates = Object.keys(dailyData).sort();
+      let cumulativePnL = 0;
+      const chartData: PnLDataPoint[] = [];
+
+      sortedDates.forEach(date => {
+        const dailyPnL = dailyData[date];
+        cumulativePnL += dailyPnL;
+        chartData.push({
+          date,
+          dailyPnL,
+          cumulativePnL
+        });
+      });
+
+      setPnLChartData(chartData);
+    } catch (error) {
+      console.error('Error in fetchPnLChartData:', error);
+    }
+  }, [user]);
+
   const fetchTradingStats = useCallback(async () => {
     if (!user) return;
 
     try {
       setLoading(true);
       
-      // Fetch recent trades and daily P&L data
+      // Fetch recent trades, daily P&L data, and chart data
       await fetchRecentTrades();
       await fetchDailyPnLData();
+      await fetchPnLChartData();
       
       // Get current month start date
       const now = new Date();
@@ -380,7 +799,7 @@ export default function HomeScreen() {
     } finally {
       setLoading(false);
     }
-  }, [user, fetchRecentTrades, fetchDailyPnLData]);
+  }, [user, fetchRecentTrades, fetchDailyPnLData, fetchPnLChartData]);
 
   useEffect(() => {
     fetchTradingStats();
@@ -717,6 +1136,56 @@ export default function HomeScreen() {
             </>
           )}
 
+          {/* P&L Charts Section */}
+          <View style={[
+            styles.responsiveContainer,
+            screenWidth > 768 && {
+              flexDirection: 'row',
+              gap: 24,
+            }
+          ]}>
+            {/* Daily net cumulative P&L Chart */}
+            <View style={[
+              styles.section,
+              styles.chartSection,
+              screenWidth > 768 && { flex: 1 }
+            ]}>
+              <View style={styles.chartHeader}>
+                <Text style={styles.sectionTitle}>
+                  Daily net cumulative P&L
+                </Text>
+                <Text style={styles.chartInfoIcon}>ⓘ</Text>
+              </View>
+              <View style={styles.chartCard}>
+                <CumulativePnLChart 
+                  data={pnlChartData} 
+                  width={screenWidth > 768 ? (screenWidth - 200) / 2 : screenWidth - 140}
+                  height={screenWidth > 768 ? 260 : 160}
+                />
+              </View>
+            </View>
+
+            {/* Net daily P&L Chart */}
+            <View style={[
+              styles.section,
+              styles.chartSection,
+              screenWidth > 768 && { flex: 1 }
+            ]}>
+              <View style={styles.chartHeader}>
+                <Text style={styles.sectionTitle}>
+                  Net daily P&L
+                </Text>
+                <Text style={styles.chartInfoIcon}>ⓘ</Text>
+              </View>
+              <View style={styles.chartCard}>
+                <DailyPnLChart 
+                  data={pnlChartData} 
+                  width={screenWidth > 768 ? (screenWidth - 200) / 2 : screenWidth - 140}
+                  height={screenWidth > 768 ? 260 : 160}
+                />
+              </View>
+            </View>
+          </View>
 
           {/* Calendar and Recent Trades Container */}
           <View style={[
@@ -1243,5 +1712,35 @@ const styles = StyleSheet.create({
   },
   recentTradesSection: {
     width: '100%',
+  },
+  // Chart styles
+  chartSection: {
+    width: '100%',
+  },
+  chartHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  chartInfoIcon: {
+    fontSize: 16,
+    color: '#999999',
+    marginLeft: 8,
+  },
+  chartCard: {
+    backgroundColor: '#1A1A1A',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#333333',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
 });
