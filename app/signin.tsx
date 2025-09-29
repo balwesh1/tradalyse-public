@@ -75,7 +75,7 @@ export default function SignInScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="Enter your email"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor="#999999"
                     onBlur={onBlur}
                     onChangeText={onChange}
                     value={value}
@@ -101,7 +101,7 @@ export default function SignInScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="Enter your password"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor="#999999"
                     onBlur={onBlur}
                     onChangeText={onChange}
                     value={value}
@@ -153,7 +153,7 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#000000',
   },
   scrollView: {
     flex: 1,
@@ -170,12 +170,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: 'bold',
-    color: '#F8FAFC',
+    color: '#E5E5E5',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
-    color: '#94A3B8',
+    color: '#CCCCCC',
     textAlign: 'center',
   },
   form: {
@@ -185,22 +185,22 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    color: '#E2E8F0',
+    color: '#E5E5E5',
     fontWeight: '500',
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#555555',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    color: '#F8FAFC',
+    color: '#E5E5E5',
     fontSize: 16,
-    backgroundColor: '#1E293B',
+    backgroundColor: '#1A1A1A',
   },
   errorText: {
-    color: '#F87171',
+    color: '#EF4444',
     fontSize: 14,
     marginTop: 4,
   },
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
     textAlign: 'center',
     fontWeight: '600',
     fontSize: 18,
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   forgotPasswordText: {
-    color: '#60A5FA',
+    color: '#10B981',
     fontWeight: '500',
     fontSize: 16,
   },
@@ -234,10 +234,10 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   footerText: {
-    color: '#94A3B8',
+    color: '#CCCCCC',
   },
   linkText: {
-    color: '#60A5FA',
+    color: '#10B981',
     fontWeight: '600',
   },
 });

@@ -4,29 +4,30 @@ import React from 'react';
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: Colors.dark.tint,
         headerShown: false,
+        headerTitle: '',
+        title: '',
         tabBarButton: HapticTab,
                 tabBarStyle: {
-                  backgroundColor: Colors[colorScheme ?? 'light'].tabBarBackground,
-                  borderTopColor: Colors[colorScheme ?? 'light'].tabBarBorder,
+                  backgroundColor: Colors.dark.tabBarBackground,
+                  borderTopColor: Colors.dark.tabBarBorder,
                 },
                 tabBarLabelStyle: {
-                  color: Colors[colorScheme ?? 'light'].tabIconDefault,
+                  color: Colors.dark.tabIconDefault,
                 },
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
+          headerShown: false,
+          headerTitle: '',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />
@@ -34,6 +35,8 @@ export default function TabLayout() {
         name="trades"
         options={{
           title: 'Trades',
+          headerShown: false,
+          headerTitle: '',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.line.uptrend.xyaxis" color={color} />,
         }}
       />
@@ -41,6 +44,8 @@ export default function TabLayout() {
         name="analytics"
         options={{
           title: 'Analytics',
+          headerShown: false,
+          headerTitle: '',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.bar.fill" color={color} />,
         }}
       />
@@ -48,6 +53,8 @@ export default function TabLayout() {
         name="explore"
         options={{
           title: 'Settings',
+          headerShown: false,
+          headerTitle: '',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="gearshape.fill" color={color} />,
         }}
       />
@@ -55,6 +62,8 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Profile',
+          headerShown: false,
+          headerTitle: '',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
         }}
       />

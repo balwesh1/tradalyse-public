@@ -5,10 +5,20 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
-
-export const unstable_settings = {
-  anchor: '(tabs)',
+// Force dark theme
+const customDarkTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    background: '#000000',
+    card: '#000000',
+    primary: '#FFFFFF',
+    text: '#E5E5E5',
+    border: '#333333',
+  },
 };
+
+
 
 function RootLayoutNav() {
   const { user, loading } = useAuth();
@@ -18,14 +28,15 @@ function RootLayoutNav() {
   }
 
   return (
-    <ThemeProvider value={DarkTheme}>
-      <Stack>
+    <ThemeProvider value={customDarkTheme}>
+      <Stack screenOptions={{ headerShown: false }}>
                 {user ? (
                   <>
                     <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                     <Stack.Screen name="home" options={{ headerShown: false }} />
                     <Stack.Screen name="add-trade" options={{ headerShown: false }} />
-                    <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+                    <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal', headerShown: false }} />
+                    <Stack.Screen name="trade-details/[id]" options={{ headerShown: false }} />
                   </>
                 ) : (
           <>
