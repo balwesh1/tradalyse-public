@@ -2,15 +2,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 interface Tag {
@@ -756,14 +756,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   tagInput: {
-    backgroundColor: '#2D3748',
+    backgroundColor: '#1A1A1A',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     color: '#E5E5E5',
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#4A5568',
+    borderColor: '#333333',
   },
   createTagButton: {
     backgroundColor: '#FFFFFF',
@@ -806,9 +806,11 @@ const styles = StyleSheet.create({
   tagItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2D3748',
+    backgroundColor: '#1A1A1A',
     borderRadius: 8,
     padding: 12,
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   tagColor: {
     width: 16,
@@ -858,14 +860,14 @@ const styles = StyleSheet.create({
   },
   editTagInput: {
     flex: 1,
-    backgroundColor: '#2D3748',
+    backgroundColor: '#1A1A1A',
     borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
     color: '#E5E5E5',
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#4A5568',
+    borderColor: '#333333',
   },
   editTagActions: {
     flexDirection: 'row',
@@ -955,14 +957,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   strategyInput: {
-    backgroundColor: '#2D3748',
+    backgroundColor: '#1A1A1A',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     color: '#E5E5E5',
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#4A5568',
+    borderColor: '#333333',
   },
   strategyDescriptionInput: {
     height: 80,
@@ -1007,10 +1009,12 @@ const styles = StyleSheet.create({
   strategyItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#2D3748',
+    backgroundColor: '#1A1A1A',
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#333333',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -1076,14 +1080,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   editStrategyInput: {
-    backgroundColor: '#2D3748',
+    backgroundColor: '#1A1A1A',
     borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
     color: '#E5E5E5',
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#4A5568',
+    borderColor: '#333333',
   },
   editStrategyDescriptionInput: {
     height: 60,
