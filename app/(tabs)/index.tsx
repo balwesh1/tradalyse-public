@@ -720,7 +720,6 @@ export default function HomeScreen() {
 
       // Create all weeks for the selected month only
       const weeklyData: WeeklyPnL[] = [];
-      const daysInMonth = endOfMonth.getDate();
       
       // Calculate total weeks needed (some months can have 6 weeks)
       const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
@@ -731,16 +730,6 @@ export default function HomeScreen() {
       lastWeekEnd.setDate(lastDayOfMonth.getDate() + (6 - lastDayOfMonth.getDay())); // End of last week (Saturday)
       const totalWeeks = Math.ceil((lastWeekEnd.getTime() - firstWeekStart.getTime()) / (7 * 24 * 60 * 60 * 1000));
 
-      console.log('Weekly P&L Debug:', {
-        month: currentMonth.toISOString().split('T')[0],
-        startOfMonth: startOfMonth.toISOString().split('T')[0],
-        endOfMonth: endOfMonth.toISOString().split('T')[0],
-        daysInMonth,
-        totalWeeks,
-        tradesCount: data?.length || 0,
-        firstWeekStart: firstWeekStart.toISOString().split('T')[0],
-        lastWeekEnd: lastWeekEnd.toISOString().split('T')[0]
-      });
 
       for (let weekNum = 1; weekNum <= totalWeeks; weekNum++) {
         const weekStart = new Date(firstWeekStart);
@@ -767,12 +756,10 @@ export default function HomeScreen() {
           if (tradeDate >= weekStart && tradeDate <= weekEnd) {
             weekData.totalPnL += trade.pnl || 0;
             tradingDays.add(tradeDateStr);
-            console.log(`Week ${weekNum}: Found trade on ${tradeDateStr}, P&L: ${trade.pnl}`);
           }
         });
 
         weekData.tradingDays = tradingDays.size;
-        console.log(`Week ${weekNum}: Total P&L: ${weekData.totalPnL}, Trading Days: ${weekData.tradingDays}`);
         weeklyData.push(weekData);
       }
 
@@ -1312,33 +1299,25 @@ export default function HomeScreen() {
               )}
 
               {/* Weekly P&L Cards */}
-              {(() => {
-                console.log('Rendering weekly cards with data:', weeklyPnLData);
-                return (
-                  <View style={[
-                    styles.weeklyCardsContainer,
-                    screenWidth > 768 && styles.weeklyCardsHorizontal
-                  ]}>
-                    {weeklyPnLData.map((week) => {
-                      console.log(`Rendering Week ${week.weekNumber}: P&L=${week.totalPnL}, Days=${week.tradingDays}`);
-                      return (
-                        <View key={week.weekNumber} style={styles.weeklyCard}>
-                          <Text style={styles.weeklyCardTitle}>Week {week.weekNumber}</Text>
-                          <Text style={[
-                            styles.weeklyCardPnL,
-                            { color: week.totalPnL >= 0 ? '#10B981' : '#EF4444' }
-                          ]}>
-                            ${week.totalPnL.toFixed(0)}
-                          </Text>
-                          <Text style={styles.weeklyCardDays}>
-                            {week.tradingDays} day{week.tradingDays !== 1 ? 's' : ''}
-                          </Text>
-                        </View>
-                      );
-                    })}
+              <View style={[
+                styles.weeklyCardsContainer,
+                screenWidth > 768 && styles.weeklyCardsHorizontal
+              ]}>
+                {weeklyPnLData.map((week) => (
+                  <View key={week.weekNumber} style={styles.weeklyCard}>
+                    <Text style={styles.weeklyCardTitle}>Week {week.weekNumber}</Text>
+                    <Text style={[
+                      styles.weeklyCardPnL,
+                      { color: week.totalPnL >= 0 ? '#10B981' : '#EF4444' }
+                    ]}>
+                      ${week.totalPnL.toFixed(0)}
+                    </Text>
+                    <Text style={styles.weeklyCardDays}>
+                      {week.tradingDays} day{week.tradingDays !== 1 ? 's' : ''}
+                    </Text>
                   </View>
-                );
-              })()}
+                ))}
+              </View>
             </View>
 
             {/* Recent Trades */}
