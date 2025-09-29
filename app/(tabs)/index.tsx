@@ -278,29 +278,6 @@ export default function HomeScreen() {
             </>
           )}
 
-          {/* Quick Actions */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Quick Actions
-            </Text>
-            <View style={styles.actionsContainer}>
-              <TouchableOpacity style={styles.actionButton}>
-                <Text style={styles.actionButtonText}>
-                  Add New Trade
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.actionButton, styles.greenButton]}>
-                <Text style={styles.actionButtonText}>
-                  View Trade History
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.actionButton, styles.purpleButton]}>
-                <Text style={styles.actionButtonText}>
-                  Analytics Dashboard
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
 
           {/* Recent Trades */}
           <View style={styles.section}>
