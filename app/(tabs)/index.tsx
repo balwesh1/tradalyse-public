@@ -58,27 +58,33 @@ interface DailyPnL {
   tradeCount: number;
 }
 
-// Circular Progress Component
-const CircularProgress = ({ percentage, size = 60, strokeWidth = 6, color = '#10B981' }: {
+// Enhanced Circular Progress Component
+const CircularProgress = ({ percentage, size = 60, strokeWidth = 6, color = '#10B981', showGlow = true }: {
   percentage: number;
   size?: number;
   strokeWidth?: number;
   color?: string;
+  showGlow?: boolean;
 }) => {
+  const progressRotation = (percentage / 100) * 360 - 90;
 
   return (
-    <View style={{ width: size, height: size }}>
-      <View style={{
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        borderWidth: strokeWidth,
-        borderColor: '#333333',
-        justifyContent: 'center',
-        alignItems: 'center',
-        position: 'relative',
-      }}>
-        <View style={{
+    <View style={{ width: size, height: size, position: 'relative' }}>
+      {/* Background Circle */}
+      <View 
+        style={{
+          position: 'absolute',
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          borderWidth: strokeWidth,
+          borderColor: '#333333',
+        }}
+      />
+      
+      {/* Progress Circle */}
+      <View 
+        style={{
           position: 'absolute',
           width: size,
           height: size,
@@ -86,21 +92,34 @@ const CircularProgress = ({ percentage, size = 60, strokeWidth = 6, color = '#10
           borderWidth: strokeWidth,
           borderColor: 'transparent',
           borderTopColor: color,
-          transform: [{ rotate: `${(percentage / 100) * 360 - 90}deg` }],
-        }} />
-        <View style={{
+          transform: [{ rotate: `${progressRotation}deg` }],
+          ...(showGlow && {
+            shadowColor: color,
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0.5,
+            shadowRadius: 8,
+            elevation: 8,
+          }),
+        }}
+      />
+      
+      {/* Inner Circle */}
+      <View 
+        style={{
           position: 'absolute',
           width: size - strokeWidth * 2,
           height: size - strokeWidth * 2,
           borderRadius: (size - strokeWidth * 2) / 2,
           backgroundColor: '#1A1A1A',
-        }} />
-      </View>
+          top: strokeWidth,
+          left: strokeWidth,
+        }}
+      />
     </View>
   );
 };
 
-// Horizontal Bar Chart Component
+// Enhanced Horizontal Bar Chart Component
 const HorizontalBarChart = ({ 
   winAmount, 
   lossAmount, 
@@ -117,24 +136,46 @@ const HorizontalBarChart = ({
   const lossWidth = totalAmount > 0 ? (Math.abs(lossAmount) / totalAmount) * width : 0;
 
   return (
-    <View style={{
-      flexDirection: 'row',
-      width: width,
-      height: height,
-      borderRadius: height / 2,
-      overflow: 'hidden',
-      backgroundColor: '#333333',
-    }}>
-      <View style={{
-        width: winWidth,
+    <View 
+      style={{
+        flexDirection: 'row',
+        width: width,
         height: height,
-        backgroundColor: '#10B981',
-      }} />
-      <View style={{
-        width: lossWidth,
-        height: height,
-        backgroundColor: '#EF4444',
-      }} />
+        borderRadius: height / 2,
+        overflow: 'hidden',
+        backgroundColor: '#333333',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 4,
+      }}
+    >
+      {/* Win Bar */}
+      <View 
+        style={{
+          width: winWidth,
+          height: height,
+          backgroundColor: '#10B981',
+          shadowColor: '#10B981',
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.3,
+          shadowRadius: 4,
+        }}
+      />
+      
+      {/* Loss Bar */}
+      <View 
+        style={{
+          width: lossWidth,
+          height: height,
+          backgroundColor: '#EF4444',
+          shadowColor: '#EF4444',
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.3,
+          shadowRadius: 4,
+        }}
+      />
     </View>
   );
 };
@@ -540,9 +581,12 @@ export default function HomeScreen() {
           ) : (
             <>
               {/* First Row */}
-              <View style={styles.statsRow}>
+              <View style={[
+                styles.statsRow,
+                screenWidth > 768 && { flexDirection: 'row', gap: 16 }
+              ]}>
                 {/* Net P&L */}
-                <View style={styles.statCard}>
+                <View style={[styles.statCard, styles.enhancedCard]}>
                   <View style={styles.statHeader}>
                     <Text style={styles.statLabel}>Net P&L</Text>
                     <View style={styles.infoIcon}>
@@ -556,7 +600,7 @@ export default function HomeScreen() {
                 </View>
 
                 {/* Trade Win % */}
-                <View style={styles.statCard}>
+                <View style={[styles.statCard, styles.enhancedCard]}>
                   <View style={styles.statHeader}>
                     <Text style={styles.statLabel}>Trade win %</Text>
                     <View style={styles.infoIcon}>
@@ -569,8 +613,11 @@ export default function HomeScreen() {
                       size={80} 
                       strokeWidth={8}
                       color={stats.winRate >= 50 ? '#10B981' : '#EF4444'}
+                      showGlow={true}
                     />
-                    <Text style={styles.chartCenterText}>{stats.winRate.toFixed(1)}%</Text>
+                    <Text style={styles.chartCenterText}>
+                      {stats.winRate.toFixed(1)}%
+                    </Text>
                   </View>
                   <View style={styles.chartLegend}>
                     <View style={styles.legendItem}>
@@ -578,7 +625,7 @@ export default function HomeScreen() {
                       <Text style={styles.legendText}>{stats.winningTrades}</Text>
                     </View>
                     <View style={styles.legendItem}>
-                      <View style={[styles.legendDot, { backgroundColor: '#333333' }]} />
+                      <View style={[styles.legendDot, { backgroundColor: '#666666' }]} />
                       <Text style={styles.legendText}>{stats.breakEvenTrades}</Text>
                     </View>
                     <View style={styles.legendItem}>
@@ -589,7 +636,7 @@ export default function HomeScreen() {
                 </View>
 
                 {/* Profit Factor */}
-                <View style={styles.statCard}>
+                <View style={[styles.statCard, styles.enhancedCard]}>
                   <View style={styles.statHeader}>
                     <Text style={styles.statLabel}>Profit factor</Text>
                     <View style={styles.infoIcon}>
@@ -602,52 +649,67 @@ export default function HomeScreen() {
                       size={80} 
                       strokeWidth={8}
                       color={stats.profitFactor >= 1 ? '#10B981' : '#EF4444'}
+                      showGlow={true}
                     />
-                    <Text style={styles.chartCenterText}>{stats.profitFactor.toFixed(2)}</Text>
+                    <Text style={styles.chartCenterText}>
+                      {stats.profitFactor.toFixed(2)}
+                    </Text>
                   </View>
                 </View>
               </View>
 
               {/* Second Row */}
-              <View style={styles.statsRow}>
+              <View style={[
+                styles.statsRow,
+                screenWidth > 768 && { flexDirection: 'row', gap: 16 }
+              ]}>
                 {/* Day Win % */}
-                <View style={styles.statCard}>
+                <View style={[styles.statCard, styles.enhancedCard]}>
                   <View style={styles.statHeader}>
                     <Text style={styles.statLabel}>Day win %</Text>
                     <View style={styles.infoIcon}>
                       <Text style={styles.infoIconText}>i</Text>
                     </View>
                   </View>
-                  <Text style={styles.statValue}>{stats.dayWinRate.toFixed(1)}%</Text>
+                  <Text style={styles.statValue}>
+                    {stats.dayWinRate.toFixed(1)}%
+                  </Text>
                   <View style={styles.chartContainer}>
                     <CircularProgress 
                       percentage={stats.dayWinRate} 
                       size={60} 
                       strokeWidth={6}
                       color={stats.dayWinRate >= 50 ? '#10B981' : '#EF4444'}
+                      showGlow={true}
                     />
                   </View>
                 </View>
 
                 {/* Avg Win/Loss Trade */}
-                <View style={[styles.statCard, styles.wideCard]}>
+                <View style={[styles.statCard, styles.enhancedCard, styles.wideCard]}>
                   <View style={styles.statHeader}>
                     <Text style={styles.statLabel}>Avg win/loss trade</Text>
                     <View style={styles.infoIcon}>
                       <Text style={styles.infoIconText}>i</Text>
                     </View>
                   </View>
-                  <Text style={styles.statValue}>{(stats.avgWinTrade / Math.abs(stats.avgLossTrade) || 0).toFixed(2)}</Text>
+                  <Text style={styles.statValue}>
+                    {Math.abs(stats.avgLossTrade) > 0 ? (stats.avgWinTrade / Math.abs(stats.avgLossTrade)).toFixed(2) : 'Infinity'}
+                  </Text>
                   <View style={styles.barChartContainer}>
                     <HorizontalBarChart 
                       winAmount={stats.avgWinTrade}
                       lossAmount={stats.avgLossTrade}
-                      width={180}
-                      height={16}
+                      width={200}
+                      height={20}
                     />
                     <View style={styles.barChartLabels}>
-                      <Text style={styles.winLabel}>${stats.avgWinTrade.toFixed(0)}</Text>
-                      <Text style={styles.lossLabel}>-${Math.abs(stats.avgLossTrade).toFixed(0)}</Text>
+                      <Text style={styles.winLabel}>
+                        ${stats.avgWinTrade.toFixed(0)}
+                      </Text>
+                      <Text style={styles.lossLabel}>
+                        -${Math.abs(stats.avgLossTrade).toFixed(0)}
+                      </Text>
                     </View>
                   </View>
                 </View>
@@ -824,6 +886,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+  },
+  enhancedCard: {
+    backgroundColor: '#1A1A1A',
+    borderWidth: 1,
+    borderColor: '#333333',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 12,
   },
   wideCard: {
     flex: 2,
