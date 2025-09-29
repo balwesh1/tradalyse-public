@@ -79,7 +79,7 @@ export default function TradesScreen() {
         .from('trades')
         .select('*')
         .eq('user_id', user.id)
-        .order('entry_date', { ascending: false })
+        .order('created_at', { ascending: false })
         .range(from, to);
 
       if (error) {
@@ -170,6 +170,7 @@ export default function TradesScreen() {
 
               refreshTrades();
             } catch (error) {
+              console.error('Error deleting trades:', error);
               Alert.alert('Error', 'Failed to delete trades');
             }
           }
