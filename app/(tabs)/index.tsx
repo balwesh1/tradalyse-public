@@ -64,6 +64,14 @@ interface PnLDataPoint {
   cumulativePnL: number;
 }
 
+interface WeeklyPnL {
+  weekNumber: number;
+  startDate: string;
+  endDate: string;
+  totalPnL: number;
+  tradingDays: number;
+}
+
 // Enhanced Circular Progress Component
 const CircularProgress = ({ percentage, size = 60, strokeWidth = 6, color = '#10B981', showGlow = true }: {
   percentage: number;
@@ -566,6 +574,7 @@ export default function HomeScreen() {
   const [recentTrades, setRecentTrades] = useState<Trade[]>([]);
   const [dailyPnLData, setDailyPnLData] = useState<DailyPnL[]>([]);
   const [pnlChartData, setPnLChartData] = useState<PnLDataPoint[]>([]);
+  const [weeklyPnLData, setWeeklyPnLData] = useState<WeeklyPnL[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [screenWidth, setScreenWidth] = useState(Dimensions.get('window').width);
@@ -688,16 +697,77 @@ export default function HomeScreen() {
     }
   }, [user]);
 
+  const fetchWeeklyPnLData = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+      const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+
+      const { data, error } = await supabase
+        .from('trades')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'closed')
+        .gte('entry_date', startOfMonth.toISOString())
+        .lte('entry_date', endOfMonth.toISOString())
+        .not('pnl', 'is', null);
+
+      if (error) {
+        console.error('Error fetching weekly P&L data:', error);
+        return;
+      }
+
+      // Create all weeks for the month (1-5 weeks max)
+      const weeklyData: WeeklyPnL[] = [];
+      const daysInMonth = endOfMonth.getDate();
+      const totalWeeks = Math.ceil(daysInMonth / 7);
+
+      for (let weekNum = 1; weekNum <= totalWeeks; weekNum++) {
+        const weekStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), (weekNum - 1) * 7 + 1);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(Math.min(weekStart.getDate() + 6, daysInMonth));
+
+        // Initialize week data
+        const weekData: WeeklyPnL = {
+          weekNumber: weekNum,
+          startDate: weekStart.toISOString().split('T')[0],
+          endDate: weekEnd.toISOString().split('T')[0],
+          totalPnL: 0,
+          tradingDays: 0
+        };
+
+        // Calculate P&L and trading days for this week
+        const tradingDays = new Set();
+        (data || []).forEach(trade => {
+          const tradeDate = new Date(trade.entry_date);
+          if (tradeDate >= weekStart && tradeDate <= weekEnd) {
+            weekData.totalPnL += trade.pnl || 0;
+            tradingDays.add(tradeDate.toISOString().split('T')[0]);
+          }
+        });
+
+        weekData.tradingDays = tradingDays.size;
+        weeklyData.push(weekData);
+      }
+
+      setWeeklyPnLData(weeklyData);
+    } catch (error) {
+      console.error('Error in fetchWeeklyPnLData:', error);
+    }
+  }, [user, currentMonth]);
+
   const fetchTradingStats = useCallback(async () => {
     if (!user) return;
 
     try {
       setLoading(true);
       
-      // Fetch recent trades, daily P&L data, and chart data
+      // Fetch recent trades, daily P&L data, chart data, and weekly P&L data
       await fetchRecentTrades();
       await fetchDailyPnLData();
       await fetchPnLChartData();
+      await fetchWeeklyPnLData();
       
       // Get current month start date
       const now = new Date();
@@ -799,7 +869,7 @@ export default function HomeScreen() {
     } finally {
       setLoading(false);
     }
-  }, [user, fetchRecentTrades, fetchDailyPnLData, fetchPnLChartData]);
+  }, [user, fetchRecentTrades, fetchDailyPnLData, fetchPnLChartData, fetchWeeklyPnLData]);
 
   useEffect(() => {
     fetchTradingStats();
@@ -812,12 +882,13 @@ export default function HomeScreen() {
     }, [fetchTradingStats])
   );
 
-  // Refetch daily P&L data when current month changes
+  // Refetch daily P&L data and weekly P&L data when current month changes
   useEffect(() => {
     if (user) {
       fetchDailyPnLData();
+      fetchWeeklyPnLData();
     }
-  }, [currentMonth, fetchDailyPnLData, user]);
+  }, [currentMonth, fetchDailyPnLData, fetchWeeklyPnLData, user]);
 
   // Listen for screen size changes
   useEffect(() => {
@@ -1214,6 +1285,27 @@ export default function HomeScreen() {
                   {renderCalendar()}
                 </View>
               )}
+
+              {/* Weekly P&L Cards */}
+              <View style={[
+                styles.weeklyCardsContainer,
+                screenWidth > 768 && styles.weeklyCardsHorizontal
+              ]}>
+                {weeklyPnLData.map((week) => (
+                  <View key={week.weekNumber} style={styles.weeklyCard}>
+                    <Text style={styles.weeklyCardTitle}>Week {week.weekNumber}</Text>
+                    <Text style={[
+                      styles.weeklyCardPnL,
+                      { color: week.totalPnL >= 0 ? '#10B981' : '#EF4444' }
+                    ]}>
+                      ${week.totalPnL.toFixed(0)}
+                    </Text>
+                    <Text style={styles.weeklyCardDays}>
+                      {week.tradingDays} day{week.tradingDays !== 1 ? 's' : ''}
+                    </Text>
+                  </View>
+                ))}
+              </View>
             </View>
 
             {/* Recent Trades */}
@@ -1742,5 +1834,53 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+  },
+  // Weekly P&L Cards styles
+  weeklyCardsContainer: {
+    flexDirection: 'column',
+    gap: 12,
+    marginTop: 16,
+  },
+  weeklyCardsHorizontal: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  weeklyCard: {
+    backgroundColor: '#1A1A1A',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#333333',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+    minWidth: 100,
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  weeklyCardTitle: {
+    color: '#E5E5E5',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  weeklyCardPnL: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  weeklyCardDays: {
+    color: '#8B5CF6',
+    fontSize: 12,
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });
