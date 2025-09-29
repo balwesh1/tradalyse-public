@@ -4,6 +4,7 @@ import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Dimensions,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -44,6 +45,12 @@ interface Trade {
   updated_at: string;
 }
 
+interface DailyPnL {
+  date: string;
+  pnl: number;
+  tradeCount: number;
+}
+
 export default function HomeScreen() {
   const { user, signOut } = useAuth();
   const [stats, setStats] = useState<TradingStats>({
@@ -55,7 +62,10 @@ export default function HomeScreen() {
     monthlyTrades: 0,
   });
   const [recentTrades, setRecentTrades] = useState<Trade[]>([]);
+  const [dailyPnLData, setDailyPnLData] = useState<DailyPnL[]>([]);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [loading, setLoading] = useState(true);
+  const [screenWidth, setScreenWidth] = useState(Dimensions.get('window').width);
 
   const fetchRecentTrades = useCallback(async () => {
     if (!user) return;
@@ -79,14 +89,60 @@ export default function HomeScreen() {
     }
   }, [user]);
 
+  const fetchDailyPnLData = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+      const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+
+      const { data, error } = await supabase
+        .from('trades')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'closed')
+        .gte('entry_date', startOfMonth.toISOString())
+        .lte('entry_date', endOfMonth.toISOString())
+        .not('pnl', 'is', null);
+
+      if (error) {
+        console.error('Error fetching daily P&L data:', error);
+        return;
+      }
+
+      // Group trades by date and calculate daily P&L
+      const dailyData: { [key: string]: DailyPnL } = {};
+      
+      (data || []).forEach(trade => {
+        const tradeDate = new Date(trade.entry_date).toISOString().split('T')[0];
+        
+        if (!dailyData[tradeDate]) {
+          dailyData[tradeDate] = {
+            date: tradeDate,
+            pnl: 0,
+            tradeCount: 0
+          };
+        }
+        
+        dailyData[tradeDate].pnl += trade.pnl || 0;
+        dailyData[tradeDate].tradeCount += 1;
+      });
+
+      setDailyPnLData(Object.values(dailyData));
+    } catch (error) {
+      console.error('Error fetching daily P&L data:', error);
+    }
+  }, [user, currentMonth]);
+
   const fetchTradingStats = useCallback(async () => {
     if (!user) return;
 
     try {
       setLoading(true);
       
-      // Fetch recent trades
+      // Fetch recent trades and daily P&L data
       await fetchRecentTrades();
+      await fetchDailyPnLData();
       
       // Get current month start date
       const now = new Date();
@@ -159,7 +215,7 @@ export default function HomeScreen() {
     } finally {
       setLoading(false);
     }
-  }, [user, fetchRecentTrades]);
+  }, [user, fetchRecentTrades, fetchDailyPnLData]);
 
   useEffect(() => {
     fetchTradingStats();
@@ -171,6 +227,22 @@ export default function HomeScreen() {
       fetchTradingStats();
     }, [fetchTradingStats])
   );
+
+  // Refetch daily P&L data when current month changes
+  useEffect(() => {
+    if (user) {
+      fetchDailyPnLData();
+    }
+  }, [currentMonth, fetchDailyPnLData, user]);
+
+  // Listen for screen size changes
+  useEffect(() => {
+    const subscription = Dimensions.addEventListener('change', ({ window }) => {
+      setScreenWidth(window.width);
+    });
+
+    return () => subscription?.remove();
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -206,6 +278,111 @@ export default function HomeScreen() {
 
   const handleTradePress = (trade: Trade) => {
     router.push(`/trade-details/${trade.id}`);
+  };
+
+  // Calendar utility functions
+  const getDaysInMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  };
+
+  const formatMonthYear = (date: Date) => {
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
+
+  const getDayPnL = (day: number) => {
+    const dateStr = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
+      .toISOString().split('T')[0];
+    return dailyPnLData.find(data => data.date === dateStr);
+  };
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    const newMonth = new Date(currentMonth);
+    if (direction === 'prev') {
+      newMonth.setMonth(newMonth.getMonth() - 1);
+    } else {
+      newMonth.setMonth(newMonth.getMonth() + 1);
+    }
+    setCurrentMonth(newMonth);
+  };
+
+  const renderCalendar = () => {
+    const daysInMonth = getDaysInMonth(currentMonth);
+    const firstDay = getFirstDayOfMonth(currentMonth);
+    const days = [];
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    // Add day headers
+    const dayHeaders = dayNames.map(day => (
+      <View key={day} style={styles.dayHeader}>
+        <Text style={styles.dayHeaderText}>{day}</Text>
+      </View>
+    ));
+
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < firstDay; i++) {
+      days.push(
+        <View key={`empty-${i}`} style={styles.calendarDay} />
+      );
+    }
+
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dayPnL = getDayPnL(day);
+      const isToday = new Date().toDateString() === new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day).toDateString();
+
+      days.push(
+        <View key={day} style={[styles.calendarDay, isToday && styles.todayDay]}>
+          <Text style={[styles.dayNumber, isToday && styles.todayDayNumber]}>
+            {day}
+          </Text>
+          {dayPnL && (
+            <View style={[
+              styles.pnlIndicator,
+              { backgroundColor: dayPnL.pnl >= 0 ? '#10B981' : '#EF4444' }
+            ]}>
+              <Text style={styles.pnlText}>
+                {dayPnL.pnl >= 0 ? '+' : ''}${dayPnL.pnl.toFixed(0)}
+              </Text>
+              <Text style={styles.tradeCountText}>
+                {dayPnL.tradeCount} trade{dayPnL.tradeCount !== 1 ? 's' : ''}
+              </Text>
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.calendar}>
+        <View style={styles.calendarHeader}>
+          <TouchableOpacity 
+            onPress={() => navigateMonth('prev')}
+            style={styles.monthNavButton}
+          >
+            <Text style={styles.monthNavText}>‹</Text>
+          </TouchableOpacity>
+          <Text style={styles.monthYearText}>
+            {formatMonthYear(currentMonth)}
+          </Text>
+          <TouchableOpacity 
+            onPress={() => navigateMonth('next')}
+            style={styles.monthNavButton}
+          >
+            <Text style={styles.monthNavText}>›</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.dayHeadersRow}>
+          {dayHeaders}
+        </View>
+        <View style={styles.daysGrid}>
+          {days}
+        </View>
+      </View>
+    );
   };
 
   return (
@@ -279,8 +456,41 @@ export default function HomeScreen() {
           )}
 
 
-          {/* Recent Trades */}
-          <View style={styles.section}>
+          {/* Calendar and Recent Trades Container */}
+          <View style={[
+            styles.responsiveContainer,
+            screenWidth > 768 && {
+              flexDirection: 'row',
+              gap: 24,
+            }
+          ]}>
+            {/* Trading Calendar */}
+            <View style={[
+              styles.section, 
+              styles.calendarSection,
+              screenWidth > 768 && { flex: 1 }
+            ]}>
+              <Text style={styles.sectionTitle}>
+                Trading Calendar
+              </Text>
+              {loading ? (
+                <View style={styles.calendarCard}>
+                  <ActivityIndicator size="small" color="#E5E5E5" />
+                  <Text style={styles.emptyText}>Loading calendar...</Text>
+                </View>
+              ) : (
+                <View style={styles.calendarCard}>
+                  {renderCalendar()}
+                </View>
+              )}
+            </View>
+
+            {/* Recent Trades */}
+            <View style={[
+              styles.section, 
+              styles.recentTradesSection,
+              screenWidth > 768 && { flex: 1 }
+            ]}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>
                 Recent Trades
@@ -350,6 +560,7 @@ export default function HomeScreen() {
                 ))}
               </View>
             )}
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -572,5 +783,121 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  // Calendar styles
+  calendarCard: {
+    backgroundColor: '#1A1A1A',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  calendar: {
+    width: '100%',
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 8,
+  },
+  monthNavButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#262626',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  monthNavText: {
+    color: '#E5E5E5',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  monthYearText: {
+    color: '#E5E5E5',
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  dayHeadersRow: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  dayHeader: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  dayHeaderText: {
+    color: '#CCCCCC',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  daysGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  calendarDay: {
+    width: '14.28%',
+    aspectRatio: 1,
+    padding: 4,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    borderRadius: 6,
+    marginBottom: 6,
+  },
+  todayDay: {
+    backgroundColor: '#262626',
+  },
+  dayNumber: {
+    color: '#E5E5E5',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  todayDayNumber: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  pnlIndicator: {
+    borderRadius: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 3,
+    minHeight: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '95%',
+  },
+  pnlText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    lineHeight: 12,
+  },
+  tradeCountText: {
+    color: '#FFFFFF',
+    fontSize: 8,
+    textAlign: 'center',
+    opacity: 0.9,
+    marginTop: 1,
+  },
+  // Responsive layout styles
+  responsiveContainer: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+  calendarSection: {
+    width: '100%',
+  },
+  recentTradesSection: {
+    width: '100%',
   },
 });
