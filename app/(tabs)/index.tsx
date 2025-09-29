@@ -20,6 +20,13 @@ interface TradingStats {
   bestTrade: number;
   monthlyChange: number;
   monthlyTrades: number;
+  profitFactor: number;
+  dayWinRate: number;
+  avgWinTrade: number;
+  avgLossTrade: number;
+  winningTrades: number;
+  losingTrades: number;
+  breakEvenTrades: number;
 }
 
 interface Trade {
@@ -51,6 +58,87 @@ interface DailyPnL {
   tradeCount: number;
 }
 
+// Circular Progress Component
+const CircularProgress = ({ percentage, size = 60, strokeWidth = 6, color = '#10B981' }: {
+  percentage: number;
+  size?: number;
+  strokeWidth?: number;
+  color?: string;
+}) => {
+
+  return (
+    <View style={{ width: size, height: size }}>
+      <View style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        borderWidth: strokeWidth,
+        borderColor: '#333333',
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative',
+      }}>
+        <View style={{
+          position: 'absolute',
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          borderWidth: strokeWidth,
+          borderColor: 'transparent',
+          borderTopColor: color,
+          transform: [{ rotate: `${(percentage / 100) * 360 - 90}deg` }],
+        }} />
+        <View style={{
+          position: 'absolute',
+          width: size - strokeWidth * 2,
+          height: size - strokeWidth * 2,
+          borderRadius: (size - strokeWidth * 2) / 2,
+          backgroundColor: '#1A1A1A',
+        }} />
+      </View>
+    </View>
+  );
+};
+
+// Horizontal Bar Chart Component
+const HorizontalBarChart = ({ 
+  winAmount, 
+  lossAmount, 
+  width = 200, 
+  height = 20 
+}: {
+  winAmount: number;
+  lossAmount: number;
+  width?: number;
+  height?: number;
+}) => {
+  const totalAmount = Math.abs(winAmount) + Math.abs(lossAmount);
+  const winWidth = totalAmount > 0 ? (Math.abs(winAmount) / totalAmount) * width : 0;
+  const lossWidth = totalAmount > 0 ? (Math.abs(lossAmount) / totalAmount) * width : 0;
+
+  return (
+    <View style={{
+      flexDirection: 'row',
+      width: width,
+      height: height,
+      borderRadius: height / 2,
+      overflow: 'hidden',
+      backgroundColor: '#333333',
+    }}>
+      <View style={{
+        width: winWidth,
+        height: height,
+        backgroundColor: '#10B981',
+      }} />
+      <View style={{
+        width: lossWidth,
+        height: height,
+        backgroundColor: '#EF4444',
+      }} />
+    </View>
+  );
+};
+
 export default function HomeScreen() {
   const { user, signOut } = useAuth();
   const [stats, setStats] = useState<TradingStats>({
@@ -60,6 +148,13 @@ export default function HomeScreen() {
     bestTrade: 0,
     monthlyChange: 0,
     monthlyTrades: 0,
+    profitFactor: 0,
+    dayWinRate: 0,
+    avgWinTrade: 0,
+    avgLossTrade: 0,
+    winningTrades: 0,
+    losingTrades: 0,
+    breakEvenTrades: 0,
   });
   const [recentTrades, setRecentTrades] = useState<Trade[]>([]);
   const [dailyPnLData, setDailyPnLData] = useState<DailyPnL[]>([]);
@@ -194,10 +289,32 @@ export default function HomeScreen() {
       const totalTrades = trades.length;
       const closedTrades = trades.filter(trade => trade.status === 'closed' && trade.pnl !== null);
       const winningTrades = closedTrades.filter(trade => trade.pnl > 0);
+      const losingTrades = closedTrades.filter(trade => trade.pnl < 0);
+      const breakEvenTrades = closedTrades.filter(trade => trade.pnl === 0);
+      
       const winRate = closedTrades.length > 0 ? (winningTrades.length / closedTrades.length) * 100 : 0;
       
       const totalPnl = closedTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
       const bestTrade = closedTrades.length > 0 ? Math.max(...closedTrades.map(trade => trade.pnl || 0)) : 0;
+      
+      // Calculate profit factor
+      const totalWins = winningTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
+      const totalLosses = Math.abs(losingTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0));
+      const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? 999 : 0;
+      
+      // Calculate average win/loss
+      const avgWinTrade = winningTrades.length > 0 ? totalWins / winningTrades.length : 0;
+      const avgLossTrade = losingTrades.length > 0 ? totalLosses / losingTrades.length : 0;
+      
+      // Calculate day win rate (simplified - using entry dates)
+      const tradingDays = new Set(closedTrades.map(trade => trade.entry_date.split('T')[0]));
+      const winningDays = new Set();
+      tradingDays.forEach(day => {
+        const dayTrades = closedTrades.filter(trade => trade.entry_date.split('T')[0] === day);
+        const dayPnl = dayTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
+        if (dayPnl > 0) winningDays.add(day);
+      });
+      const dayWinRate = tradingDays.size > 0 ? (winningDays.size / tradingDays.size) * 100 : 0;
       
       const monthlyTrades = currentMonth.length;
       const monthlyChange = lastMonth.length > 0 ? ((monthlyTrades - lastMonth.length) / lastMonth.length) * 100 : 0;
@@ -209,6 +326,13 @@ export default function HomeScreen() {
         bestTrade,
         monthlyChange,
         monthlyTrades,
+        profitFactor,
+        dayWinRate,
+        avgWinTrade,
+        avgLossTrade,
+        winningTrades: winningTrades.length,
+        losingTrades: losingTrades.length,
+        breakEvenTrades: breakEvenTrades.length,
       });
     } catch (error) {
       console.error('Error calculating trading stats:', error);
@@ -415,41 +539,117 @@ export default function HomeScreen() {
             </View>
           ) : (
             <>
+              {/* First Row */}
               <View style={styles.statsRow}>
+                {/* Net P&L */}
                 <View style={styles.statCard}>
-                  <Text style={styles.statLabel}>Total Trades</Text>
-                  <Text style={styles.statValue}>{stats.totalTrades}</Text>
-                  <Text style={styles.statChange}>
-                    {stats.monthlyChange >= 0 ? '+' : ''}{stats.monthlyChange.toFixed(1)}% this month
-                  </Text>
-                </View>
-                <View style={styles.statCard}>
-                  <Text style={styles.statLabel}>Win Rate</Text>
-                  <Text style={styles.statValue}>{stats.winRate.toFixed(1)}%</Text>
-                  <Text style={styles.statChange}>
-                    {stats.monthlyTrades} trades this month
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.statsRow}>
-                <View style={styles.statCard}>
-                  <Text style={styles.statLabel}>P&amp;L</Text>
+                  <View style={styles.statHeader}>
+                    <Text style={styles.statLabel}>Net P&L</Text>
+                    <View style={styles.infoIcon}>
+                      <Text style={styles.infoIconText}>i</Text>
+                    </View>
+                  </View>
                   <Text style={[styles.statValue, { color: stats.totalPnl >= 0 ? '#10B981' : '#EF4444' }]}>
                     ${stats.totalPnl.toFixed(2)}
                   </Text>
-                  <Text style={styles.statChange}>
-                    {stats.totalPnl >= 0 ? 'Profit' : 'Loss'}
-                  </Text>
+                  <Text style={styles.statSubtext}>{stats.totalTrades}</Text>
                 </View>
+
+                {/* Trade Win % */}
                 <View style={styles.statCard}>
-                  <Text style={styles.statLabel}>Best Trade</Text>
-                  <Text style={[styles.statValue, { color: stats.bestTrade >= 0 ? '#10B981' : '#EF4444' }]}>
-                    ${stats.bestTrade.toFixed(2)}
-                  </Text>
-                  <Text style={styles.statChange}>
-                    {stats.bestTrade >= 0 ? 'Highest profit' : 'Best loss'}
-                  </Text>
+                  <View style={styles.statHeader}>
+                    <Text style={styles.statLabel}>Trade win %</Text>
+                    <View style={styles.infoIcon}>
+                      <Text style={styles.infoIconText}>i</Text>
+                    </View>
+                  </View>
+                  <View style={styles.chartContainer}>
+                    <CircularProgress 
+                      percentage={stats.winRate} 
+                      size={80} 
+                      strokeWidth={8}
+                      color={stats.winRate >= 50 ? '#10B981' : '#EF4444'}
+                    />
+                    <Text style={styles.chartCenterText}>{stats.winRate.toFixed(1)}%</Text>
+                  </View>
+                  <View style={styles.chartLegend}>
+                    <View style={styles.legendItem}>
+                      <View style={[styles.legendDot, { backgroundColor: '#10B981' }]} />
+                      <Text style={styles.legendText}>{stats.winningTrades}</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                      <View style={[styles.legendDot, { backgroundColor: '#333333' }]} />
+                      <Text style={styles.legendText}>{stats.breakEvenTrades}</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                      <View style={[styles.legendDot, { backgroundColor: '#EF4444' }]} />
+                      <Text style={styles.legendText}>{stats.losingTrades}</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Profit Factor */}
+                <View style={styles.statCard}>
+                  <View style={styles.statHeader}>
+                    <Text style={styles.statLabel}>Profit factor</Text>
+                    <View style={styles.infoIcon}>
+                      <Text style={styles.infoIconText}>i</Text>
+                    </View>
+                  </View>
+                  <View style={styles.chartContainer}>
+                    <CircularProgress 
+                      percentage={Math.min(stats.profitFactor * 25, 100)} 
+                      size={80} 
+                      strokeWidth={8}
+                      color={stats.profitFactor >= 1 ? '#10B981' : '#EF4444'}
+                    />
+                    <Text style={styles.chartCenterText}>{stats.profitFactor.toFixed(2)}</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Second Row */}
+              <View style={styles.statsRow}>
+                {/* Day Win % */}
+                <View style={styles.statCard}>
+                  <View style={styles.statHeader}>
+                    <Text style={styles.statLabel}>Day win %</Text>
+                    <View style={styles.infoIcon}>
+                      <Text style={styles.infoIconText}>i</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.statValue}>{stats.dayWinRate.toFixed(1)}%</Text>
+                  <View style={styles.chartContainer}>
+                    <CircularProgress 
+                      percentage={stats.dayWinRate} 
+                      size={60} 
+                      strokeWidth={6}
+                      color={stats.dayWinRate >= 50 ? '#10B981' : '#EF4444'}
+                    />
+                  </View>
+                </View>
+
+                {/* Avg Win/Loss Trade */}
+                <View style={[styles.statCard, styles.wideCard]}>
+                  <View style={styles.statHeader}>
+                    <Text style={styles.statLabel}>Avg win/loss trade</Text>
+                    <View style={styles.infoIcon}>
+                      <Text style={styles.infoIconText}>i</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.statValue}>{(stats.avgWinTrade / Math.abs(stats.avgLossTrade) || 0).toFixed(2)}</Text>
+                  <View style={styles.barChartContainer}>
+                    <HorizontalBarChart 
+                      winAmount={stats.avgWinTrade}
+                      lossAmount={stats.avgLossTrade}
+                      width={180}
+                      height={16}
+                    />
+                    <View style={styles.barChartLabels}>
+                      <Text style={styles.winLabel}>${stats.avgWinTrade.toFixed(0)}</Text>
+                      <Text style={styles.lossLabel}>-${Math.abs(stats.avgLossTrade).toFixed(0)}</Text>
+                    </View>
+                  </View>
                 </View>
               </View>
             </>
@@ -625,10 +825,32 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
+  wideCard: {
+    flex: 2,
+  },
+  statHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   statLabel: {
     color: '#CCCCCC',
-    fontSize: 14,
-    marginBottom: 4,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  infoIcon: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#333333',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  infoIconText: {
+    color: '#CCCCCC',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   statValue: {
     fontSize: 24,
@@ -636,13 +858,60 @@ const styles = StyleSheet.create({
     color: '#E5E5E5',
     marginBottom: 4,
   },
-  statChange: {
-    color: '#10B981',
-    fontSize: 14,
-  },
   statSubtext: {
     color: '#999999',
     fontSize: 14,
+  },
+  chartContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 8,
+    position: 'relative',
+  },
+  chartCenterText: {
+    position: 'absolute',
+    color: '#E5E5E5',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  chartLegend: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 8,
+  },
+  legendItem: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendText: {
+    color: '#CCCCCC',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  barChartContainer: {
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  barChartLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: 180,
+  },
+  winLabel: {
+    color: '#10B981',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  lossLabel: {
+    color: '#EF4444',
+    fontSize: 12,
+    fontWeight: '500',
   },
   section: {
     marginBottom: 32,
