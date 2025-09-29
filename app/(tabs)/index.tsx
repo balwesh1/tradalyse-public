@@ -718,15 +718,35 @@ export default function HomeScreen() {
         return;
       }
 
-      // Create all weeks for the month (1-5 weeks max)
+      // Create all weeks for the selected month only
       const weeklyData: WeeklyPnL[] = [];
       const daysInMonth = endOfMonth.getDate();
-      const totalWeeks = Math.ceil(daysInMonth / 7);
+      
+      // Calculate total weeks needed (some months can have 6 weeks)
+      const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+      const lastDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+      const firstWeekStart = new Date(firstDayOfMonth);
+      firstWeekStart.setDate(firstDayOfMonth.getDate() - firstDayOfMonth.getDay()); // Start of first week (Sunday)
+      const lastWeekEnd = new Date(lastDayOfMonth);
+      lastWeekEnd.setDate(lastDayOfMonth.getDate() + (6 - lastDayOfMonth.getDay())); // End of last week (Saturday)
+      const totalWeeks = Math.ceil((lastWeekEnd.getTime() - firstWeekStart.getTime()) / (7 * 24 * 60 * 60 * 1000));
+
+      console.log('Weekly P&L Debug:', {
+        month: currentMonth.toISOString().split('T')[0],
+        startOfMonth: startOfMonth.toISOString().split('T')[0],
+        endOfMonth: endOfMonth.toISOString().split('T')[0],
+        daysInMonth,
+        totalWeeks,
+        tradesCount: data?.length || 0,
+        firstWeekStart: firstWeekStart.toISOString().split('T')[0],
+        lastWeekEnd: lastWeekEnd.toISOString().split('T')[0]
+      });
 
       for (let weekNum = 1; weekNum <= totalWeeks; weekNum++) {
-        const weekStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), (weekNum - 1) * 7 + 1);
+        const weekStart = new Date(firstWeekStart);
+        weekStart.setDate(firstWeekStart.getDate() + (weekNum - 1) * 7);
         const weekEnd = new Date(weekStart);
-        weekEnd.setDate(Math.min(weekStart.getDate() + 6, daysInMonth));
+        weekEnd.setDate(weekStart.getDate() + 6);
 
         // Initialize week data
         const weekData: WeeklyPnL = {
@@ -741,13 +761,18 @@ export default function HomeScreen() {
         const tradingDays = new Set();
         (data || []).forEach(trade => {
           const tradeDate = new Date(trade.entry_date);
+          const tradeDateStr = tradeDate.toISOString().split('T')[0];
+          
+          // Check if trade falls within this week
           if (tradeDate >= weekStart && tradeDate <= weekEnd) {
             weekData.totalPnL += trade.pnl || 0;
-            tradingDays.add(tradeDate.toISOString().split('T')[0]);
+            tradingDays.add(tradeDateStr);
+            console.log(`Week ${weekNum}: Found trade on ${tradeDateStr}, P&L: ${trade.pnl}`);
           }
         });
 
         weekData.tradingDays = tradingDays.size;
+        console.log(`Week ${weekNum}: Total P&L: ${weekData.totalPnL}, Trading Days: ${weekData.tradingDays}`);
         weeklyData.push(weekData);
       }
 
@@ -1287,25 +1312,33 @@ export default function HomeScreen() {
               )}
 
               {/* Weekly P&L Cards */}
-              <View style={[
-                styles.weeklyCardsContainer,
-                screenWidth > 768 && styles.weeklyCardsHorizontal
-              ]}>
-                {weeklyPnLData.map((week) => (
-                  <View key={week.weekNumber} style={styles.weeklyCard}>
-                    <Text style={styles.weeklyCardTitle}>Week {week.weekNumber}</Text>
-                    <Text style={[
-                      styles.weeklyCardPnL,
-                      { color: week.totalPnL >= 0 ? '#10B981' : '#EF4444' }
-                    ]}>
-                      ${week.totalPnL.toFixed(0)}
-                    </Text>
-                    <Text style={styles.weeklyCardDays}>
-                      {week.tradingDays} day{week.tradingDays !== 1 ? 's' : ''}
-                    </Text>
+              {(() => {
+                console.log('Rendering weekly cards with data:', weeklyPnLData);
+                return (
+                  <View style={[
+                    styles.weeklyCardsContainer,
+                    screenWidth > 768 && styles.weeklyCardsHorizontal
+                  ]}>
+                    {weeklyPnLData.map((week) => {
+                      console.log(`Rendering Week ${week.weekNumber}: P&L=${week.totalPnL}, Days=${week.tradingDays}`);
+                      return (
+                        <View key={week.weekNumber} style={styles.weeklyCard}>
+                          <Text style={styles.weeklyCardTitle}>Week {week.weekNumber}</Text>
+                          <Text style={[
+                            styles.weeklyCardPnL,
+                            { color: week.totalPnL >= 0 ? '#10B981' : '#EF4444' }
+                          ]}>
+                            ${week.totalPnL.toFixed(0)}
+                          </Text>
+                          <Text style={styles.weeklyCardDays}>
+                            {week.tradingDays} day{week.tradingDays !== 1 ? 's' : ''}
+                          </Text>
+                        </View>
+                      );
+                    })}
                   </View>
-                ))}
-              </View>
+                );
+              })()}
             </View>
 
             {/* Recent Trades */}
