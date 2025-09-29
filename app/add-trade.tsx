@@ -106,6 +106,13 @@ export default function AddTradeScreen() {
     }
   }, [user, fetchTags, fetchStrategies]);
 
+  // Initialize entry date with current date
+  useEffect(() => {
+    const today = new Date();
+    const formattedToday = `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${today.getFullYear()}`;
+    setEntryDateInput(formattedToday);
+  }, []);
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -120,15 +127,6 @@ export default function AddTradeScreen() {
 
   const assetTypes = useMemo(() => ['Stock', 'Option', 'Future', 'Crypto', 'ETF', 'Bond'], []);
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-  };
 
   const validateAndFormatDate = (dateInput: string) => {
     // Remove any non-numeric characters except /
@@ -174,19 +172,6 @@ export default function AddTradeScreen() {
     }
   };
 
-  const dateOptions = useMemo(() => {
-    const dates = [];
-    const today = new Date();
-    const startDate = new Date(2020, 0, 1); // Start from 2020
-    
-    // Generate dates from 2020 to today (limit to 1000 for performance)
-    let count = 0;
-    for (let date = new Date(today); date >= startDate && count < 1000; date.setDate(date.getDate() - 1)) {
-      dates.push(date.toISOString().split('T')[0]);
-      count++;
-    }
-    return dates;
-  }, []);
 
 
   const calculateTotalCost = (price: string, quantity: string, lotSize: string) => {
@@ -246,6 +231,12 @@ export default function AddTradeScreen() {
       return;
     }
 
+    // Validate exit date for closed trades
+    if (formData.status === 'Closed' && !exitDateInput.trim()) {
+      Alert.alert('Error', 'Exit date is required for closed trades');
+      return;
+    }
+
     let formattedExitDate = null;
     if (exitDateInput.trim()) {
       formattedExitDate = validateAndFormatDate(exitDateInput);
@@ -283,7 +274,7 @@ export default function AddTradeScreen() {
         notes: formData.notes.trim() || null,
       };
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('trades')
         .insert(tradeData)
         .select();
