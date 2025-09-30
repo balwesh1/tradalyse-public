@@ -3,14 +3,14 @@ import { supabase } from '@/lib/supabase';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 interface Trade {
@@ -32,6 +32,7 @@ interface Trade {
   strategy_id: string | null;
   tags: string[] | null;
   notes: string | null;
+  screenshot_url: string | null;
   created_at: string;
   updated_at: string;
 }

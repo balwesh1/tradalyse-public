@@ -1,11 +1,15 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   Modal,
+  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -14,6 +18,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { PinchGestureHandler } from 'react-native-gesture-handler';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
 interface Trade {
   id: string;
@@ -34,6 +44,7 @@ interface Trade {
   strategy_id: string | null;
   tags: string[] | null;
   notes: string | null;
+  screenshot_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -61,6 +72,12 @@ export default function TradeDetailsScreen() {
   
   // Modal states
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showScreenshotModal, setShowScreenshotModal] = useState(false);
+  const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
+  
+  // Image zoom states
+  const scale = useSharedValue(1);
+  const savedScale = useSharedValue(1);
 
   const fetchTrade = useCallback(async () => {
     if (!user || !id) return;
@@ -294,6 +311,281 @@ export default function TradeDetailsScreen() {
   const getPnLColor = (pnl: number | null) => {
     if (pnl === null) return '#CCCCCC';
     return pnl >= 0 ? '#10B981' : '#EF4444';
+  };
+
+  // Pinch gesture handler for image zoom
+  const pinchHandler = (event: any) => {
+    'worklet';
+    const { scale: gestureScale } = event.nativeEvent;
+    
+    if (event.nativeEvent.state === 1) { // BEGAN
+      // Gesture started
+    } else if (event.nativeEvent.state === 2) { // CHANGED
+      scale.value = savedScale.value * gestureScale;
+    } else if (event.nativeEvent.state === 3) { // ENDED
+      savedScale.value = scale.value;
+      if (scale.value < 1) {
+        scale.value = withSpring(1);
+        savedScale.value = 1;
+      } else if (scale.value > 3) {
+        scale.value = withSpring(3);
+        savedScale.value = 3;
+      }
+    }
+  };
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scale.value }],
+    };
+  });
+
+  const resetImageZoom = () => {
+    scale.value = withSpring(1);
+    savedScale.value = 1;
+  };
+
+  const handleScreenshotUpload = async () => {
+    if (!trade) return;
+
+    try {
+      // Request permissions (skip on web)
+      if (Platform.OS !== 'web') {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission Required', 'Please grant camera roll permissions to upload screenshots.');
+          return;
+        }
+      }
+
+      // Show action sheet
+      const options = [
+        { text: 'Photo Library', onPress: () => pickImage('library') },
+        { text: 'Cancel', style: 'cancel' as const }
+      ];
+
+      // Only add camera option on mobile platforms
+      if (Platform.OS !== 'web') {
+        options.unshift({ text: 'Camera', onPress: () => pickImage('camera') });
+      }
+
+      Alert.alert(
+        'Select Screenshot',
+        'Choose how you want to add a screenshot',
+        options
+      );
+    } catch (error) {
+      console.error('Error requesting permissions:', error);
+      Alert.alert('Error', 'Failed to request permissions');
+    }
+  };
+
+  const pickImage = async (source: 'camera' | 'library') => {
+    if (!trade) return;
+
+    try {
+      setUploadingScreenshot(true);
+
+      const options: ImagePicker.ImagePickerOptions = {
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+        base64: false,
+      };
+
+      let result;
+      if (source === 'camera') {
+        // Skip camera on web
+        if (Platform.OS === 'web') {
+          Alert.alert('Not Available', 'Camera is not available on web platform.');
+          return;
+        }
+        
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission Required', 'Please grant camera permissions to take photos.');
+          return;
+        }
+        result = await ImagePicker.launchCameraAsync(options);
+      } else {
+        result = await ImagePicker.launchImageLibraryAsync(options);
+      }
+
+      if (!result.canceled && result.assets[0]) {
+        await uploadScreenshot(result.assets[0]);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image');
+    } finally {
+      setUploadingScreenshot(false);
+    }
+  };
+
+  const uploadScreenshot = async (asset: ImagePicker.ImagePickerAsset) => {
+    if (!trade || !user) return;
+
+    try {
+      setUploadingScreenshot(true);
+
+      // If there's already a screenshot, delete it first
+      if (trade.screenshot_url) {
+        await deleteExistingScreenshot();
+      }
+
+      // Create a unique filename
+      const fileExt = asset.uri.split('.').pop() || 'jpg';
+      const fileName = `${trade.id}_${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      console.log('Uploading screenshot:', {
+        userId: user.id,
+        filePath,
+        fileName,
+        fileExt
+      });
+
+      // Create FormData for React Native file upload
+      const formData = new FormData();
+      formData.append('file', {
+        uri: asset.uri,
+        type: `image/${fileExt}`,
+        name: fileName,
+      } as any);
+
+      // Upload to Supabase storage using FormData
+      const { error: uploadError } = await supabase.storage
+        .from('trade-screenshots')
+        .upload(filePath, formData, {
+          contentType: `image/${fileExt}`,
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        console.error('Upload error details:', {
+          message: uploadError.message,
+          name: uploadError.name
+        });
+        Alert.alert('Error', `Failed to upload screenshot: ${uploadError.message}`);
+        return;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('trade-screenshots')
+        .getPublicUrl(filePath);
+
+      console.log('Upload successful, public URL:', publicUrl);
+
+      // Update trade with screenshot URL
+      const { error: updateError } = await supabase
+        .from('trades')
+        .update({ screenshot_url: publicUrl })
+        .eq('id', trade.id);
+
+      if (updateError) {
+        console.error('Update error:', updateError);
+        Alert.alert('Error', 'Failed to save screenshot');
+        return;
+      }
+
+      // Refresh trade data
+      await fetchTrade();
+      Alert.alert('Success', 'Screenshot uploaded successfully');
+    } catch (error) {
+      console.error('Error uploading screenshot:', error);
+      Alert.alert('Error', 'Failed to upload screenshot');
+    } finally {
+      setUploadingScreenshot(false);
+    }
+  };
+
+  const deleteExistingScreenshot = async () => {
+    if (!trade || !trade.screenshot_url) return;
+
+    try {
+      // Extract file path from URL
+      const url = new URL(trade.screenshot_url);
+      const pathParts = url.pathname.split('/');
+      const filePath = pathParts.slice(-2).join('/'); // Get last 2 parts: user_id/filename
+
+      // Delete from storage
+      const { error: deleteError } = await supabase.storage
+        .from('trade-screenshots')
+        .remove([filePath]);
+
+      if (deleteError) {
+        console.error('Error deleting existing screenshot:', deleteError);
+        // Continue with upload even if deletion fails
+      }
+    } catch (error) {
+      console.error('Error deleting existing screenshot:', error);
+      // Continue with upload even if deletion fails
+    }
+  };
+
+  const handleScreenshotDelete = () => {
+    if (!trade || !trade.screenshot_url) return;
+
+    Alert.alert(
+      'Delete Screenshot',
+      'Are you sure you want to delete this screenshot?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: deleteScreenshot
+        }
+      ]
+    );
+  };
+
+  const deleteScreenshot = async () => {
+    if (!trade || !trade.screenshot_url) return;
+
+    try {
+      setUploadingScreenshot(true);
+
+      // Extract file path from URL
+      const url = new URL(trade.screenshot_url);
+      const pathParts = url.pathname.split('/');
+      const filePath = pathParts.slice(-2).join('/'); // Get last 2 parts: user_id/filename
+
+      // Delete from storage
+      const { error: deleteError } = await supabase.storage
+        .from('trade-screenshots')
+        .remove([filePath]);
+
+      if (deleteError) {
+        console.error('Delete error:', deleteError);
+        Alert.alert('Error', 'Failed to delete screenshot from storage');
+        return;
+      }
+
+      // Update trade to remove screenshot URL
+      const { error: updateError } = await supabase
+        .from('trades')
+        .update({ screenshot_url: null })
+        .eq('id', trade.id);
+
+      if (updateError) {
+        console.error('Update error:', updateError);
+        Alert.alert('Error', 'Failed to remove screenshot reference');
+        return;
+      }
+
+      // Refresh trade data
+      await fetchTrade();
+      Alert.alert('Success', 'Screenshot deleted successfully');
+    } catch (error) {
+      console.error('Error deleting screenshot:', error);
+      Alert.alert('Error', 'Failed to delete screenshot');
+    } finally {
+      setUploadingScreenshot(false);
+    }
   };
 
   if (loading) {
@@ -577,6 +869,65 @@ export default function TradeDetailsScreen() {
             )}
           </View>
 
+          {/* Screenshot */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Screenshot</Text>
+              {isEditing && (
+                <TouchableOpacity
+                  style={styles.addScreenshotButton}
+                  onPress={handleScreenshotUpload}
+                  disabled={uploadingScreenshot}
+                >
+                  <Text style={styles.addScreenshotButtonText}>
+                    {uploadingScreenshot ? 'Uploading...' : 'Add Screenshot'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            
+            {trade.screenshot_url ? (
+              <View style={styles.screenshotContainer}>
+                <TouchableOpacity
+                  style={styles.screenshotWrapper}
+                  onPress={() => setShowScreenshotModal(true)}
+                >
+                  <Image
+                    source={{ uri: trade.screenshot_url }}
+                    style={styles.screenshotImage}
+                    contentFit="cover"
+                  />
+                </TouchableOpacity>
+                {isEditing && (
+                  <TouchableOpacity
+                    style={styles.deleteScreenshotButton}
+                    onPress={handleScreenshotDelete}
+                    disabled={uploadingScreenshot}
+                  >
+                    <Text style={styles.deleteScreenshotButtonText}>Delete</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : (
+              <View style={styles.noScreenshotContainer}>
+                <Text style={styles.noScreenshotText}>
+                  {isEditing ? 'No screenshot added yet' : 'No screenshot available'}
+                </Text>
+                {isEditing && (
+                  <TouchableOpacity
+                    style={styles.addScreenshotButtonSmall}
+                    onPress={handleScreenshotUpload}
+                    disabled={uploadingScreenshot}
+                  >
+                    <Text style={styles.addScreenshotButtonTextSmall}>
+                      {uploadingScreenshot ? 'Uploading...' : 'Add Screenshot'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </View>
+
           {/* Metadata */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Metadata</Text>
@@ -629,6 +980,48 @@ export default function TradeDetailsScreen() {
               <Text style={styles.modalCancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
+        </View>
+      </Modal>
+
+      {/* Screenshot Modal */}
+      <Modal
+        visible={showScreenshotModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          resetImageZoom();
+          setShowScreenshotModal(false);
+        }}
+      >
+        <View style={styles.screenshotModalOverlay}>
+          <TouchableOpacity
+            style={styles.screenshotModalClose}
+            onPress={() => {
+              resetImageZoom();
+              setShowScreenshotModal(false);
+            }}
+          >
+            <Text style={styles.screenshotModalCloseText}>✕</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.screenshotModalReset}
+            onPress={resetImageZoom}
+          >
+            <Text style={styles.screenshotModalResetText}>Reset Zoom</Text>
+          </TouchableOpacity>
+          
+          {trade?.screenshot_url && (
+            <PinchGestureHandler onGestureEvent={pinchHandler}>
+              <Animated.View style={[styles.screenshotModalContainer, animatedStyle]}>
+                <Image
+                  source={{ uri: trade.screenshot_url }}
+                  style={styles.screenshotModalImage}
+                  contentFit="contain"
+                />
+              </Animated.View>
+            </PinchGestureHandler>
+          )}
         </View>
       </Modal>
     </SafeAreaView>
@@ -865,5 +1258,134 @@ const styles = StyleSheet.create({
     color: '#CCCCCC',
     fontSize: 16,
     textAlign: 'center',
+  },
+  // Screenshot styles
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  addScreenshotButton: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  addScreenshotButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  addScreenshotButtonSmall: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 12,
+    alignSelf: 'center',
+  },
+  addScreenshotButtonTextSmall: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  screenshotContainer: {
+    alignItems: 'center',
+  },
+  screenshotWrapper: {
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  screenshotImage: {
+    width: 200,
+    height: 150,
+    borderRadius: 8,
+  },
+  deleteScreenshotButton: {
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  deleteScreenshotButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  noScreenshotContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  noScreenshotText: {
+    color: '#CCCCCC',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  // Screenshot modal styles
+  screenshotModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  screenshotModalClose: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : 40,
+    right: 20,
+    zIndex: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 25,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  screenshotModalCloseText: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  screenshotModalReset: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : 40,
+    left: 20,
+    zIndex: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  screenshotModalResetText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  screenshotModalContainer: {
+    width: Dimensions.get('window').width,
+    height: Dimensions.get('window').height,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  screenshotModalImage: {
+    width: Dimensions.get('window').width,
+    height: Dimensions.get('window').height,
   },
 });
