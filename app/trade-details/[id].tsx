@@ -89,6 +89,12 @@ export default function TradeDetailsScreen() {
     status: '',
     pnl: 0,
   });
+
+  // Available tags and strategies for editing
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [availableStrategies, setAvailableStrategies] = useState<Strategy[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [selectedStrategyId, setSelectedStrategyId] = useState<string>('');
   
   // Modal states
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -179,9 +185,53 @@ export default function TradeDetailsScreen() {
     }
   }, [user, id]);
 
+  const fetchAvailableTags = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('tags')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching tags:', error);
+        return;
+      }
+
+      setAvailableTags(data || []);
+    } catch (error) {
+      console.error('Error in fetchAvailableTags:', error);
+    }
+  }, [user]);
+
+  const fetchAvailableStrategies = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('strategies')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching strategies:', error);
+        return;
+      }
+
+      setAvailableStrategies(data || []);
+    } catch (error) {
+      console.error('Error in fetchAvailableStrategies:', error);
+    }
+  }, [user]);
+
   useEffect(() => {
     fetchTrade();
-  }, [fetchTrade]);
+    fetchAvailableTags();
+    fetchAvailableStrategies();
+  }, [fetchTrade, fetchAvailableTags, fetchAvailableStrategies]);
 
   const calculatePnL = (entryPrice: string, exitPrice: string, quantity: string, commission: string, tradeType: string, assetType: string, lotSize: number) => {
     if (!entryPrice || !exitPrice || !quantity) {
@@ -232,7 +282,27 @@ export default function TradeDetailsScreen() {
     });
   };
 
+  const handleTagToggle = (tagId: string) => {
+    setSelectedTagIds(prev => {
+      if (prev.includes(tagId)) {
+        return prev.filter(id => id !== tagId);
+      } else {
+        return [...prev, tagId];
+      }
+    });
+  };
+
+  const handleStrategyChange = (strategyId: string) => {
+    setSelectedStrategyId(strategyId);
+  };
+
   const handleEdit = () => {
+    if (!trade) return;
+    
+    // Initialize selected tags and strategy
+    setSelectedTagIds(trade.tags || []);
+    setSelectedStrategyId(trade.strategy_id || '');
+    
     setIsEditing(true);
   };
 
@@ -251,6 +321,11 @@ export default function TradeDetailsScreen() {
       status: trade.status || '',
       pnl: trade.pnl || 0,
     });
+    
+    // Reset selected tags and strategy
+    setSelectedTagIds(trade.tags || []);
+    setSelectedStrategyId(trade.strategy_id || '');
+    
     setIsEditing(false);
   };
 
@@ -284,6 +359,8 @@ export default function TradeDetailsScreen() {
         pnl: editData.pnl,
         notes: editData.notes.trim() || null,
         status: editData.status,
+        strategy_id: selectedStrategyId || null,
+        tags: selectedTagIds.length > 0 ? selectedTagIds : null,
         updated_at: new Date().toISOString(),
       };
 
@@ -900,28 +977,92 @@ export default function TradeDetailsScreen() {
           </View>
 
           {/* Strategy */}
-          {trade.strategy && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Strategy</Text>
-              <View style={[styles.tag, { backgroundColor: trade.strategy.color }]}>
-                <Text style={styles.tagText}>{trade.strategy.name}</Text>
-              </View>
-            </View>
-          )}
-
-          {/* Tags */}
-          {trade.tag_objects && trade.tag_objects.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Tags</Text>
-              <View style={styles.tagsContainer}>
-                {trade.tag_objects.map((tag) => (
-                  <View key={tag.id} style={[styles.tag, { backgroundColor: tag.color }]}>
-                    <Text style={styles.tagText}>{tag.name}</Text>
-                  </View>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Strategy</Text>
+            {isEditing ? (
+              <View style={styles.selectionContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.selectionOption,
+                    !selectedStrategyId && styles.selectionOptionSelected
+                  ]}
+                  onPress={() => handleStrategyChange('')}
+                >
+                  <Text style={[
+                    styles.selectionOptionText,
+                    !selectedStrategyId && styles.selectionOptionTextSelected
+                  ]}>
+                    None
+                  </Text>
+                </TouchableOpacity>
+                {availableStrategies.map((strategy) => (
+                  <TouchableOpacity
+                    key={strategy.id}
+                    style={[
+                      styles.selectionOption,
+                      selectedStrategyId === strategy.id && styles.selectionOptionSelected,
+                      { borderColor: strategy.color }
+                    ]}
+                    onPress={() => handleStrategyChange(strategy.id)}
+                  >
+                    <Text style={[
+                      styles.selectionOptionText,
+                      selectedStrategyId === strategy.id && styles.selectionOptionTextSelected
+                    ]}>
+                      {strategy.name}
+                    </Text>
+                  </TouchableOpacity>
                 ))}
               </View>
-            </View>
-          )}
+            ) : (
+              trade.strategy ? (
+                <View style={[styles.tag, { backgroundColor: trade.strategy.color }]}>
+                  <Text style={styles.tagText}>{trade.strategy.name}</Text>
+                </View>
+              ) : (
+                <Text style={styles.noSelectionText}>No strategy selected</Text>
+              )
+            )}
+          </View>
+
+          {/* Tags */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Tags</Text>
+            {isEditing ? (
+              <View style={styles.selectionContainer}>
+                {availableTags.map((tag) => (
+                  <TouchableOpacity
+                    key={tag.id}
+                    style={[
+                      styles.selectionOption,
+                      selectedTagIds.includes(tag.id) && styles.selectionOptionSelected,
+                      { borderColor: tag.color }
+                    ]}
+                    onPress={() => handleTagToggle(tag.id)}
+                  >
+                    <Text style={[
+                      styles.selectionOptionText,
+                      selectedTagIds.includes(tag.id) && styles.selectionOptionTextSelected
+                    ]}>
+                      {tag.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              trade.tag_objects && trade.tag_objects.length > 0 ? (
+                <View style={styles.tagsContainer}>
+                  {trade.tag_objects.map((tag) => (
+                    <View key={tag.id} style={[styles.tag, { backgroundColor: tag.color }]}>
+                      <Text style={styles.tagText}>{tag.name}</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text style={styles.noSelectionText}>No tags selected</Text>
+              )
+            )}
+          </View>
 
           {/* Notes */}
           <View style={styles.section}>
@@ -1221,6 +1362,37 @@ const styles = StyleSheet.create({
     color: '#E5E5E5',
     fontSize: 14,
     fontWeight: '500',
+  },
+  selectionContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  selectionOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+    backgroundColor: '#1A1A1A',
+  },
+  selectionOptionSelected: {
+    backgroundColor: '#2A2A2A',
+    borderWidth: 2,
+  },
+  selectionOptionText: {
+    color: '#E5E5E5',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  selectionOptionTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  noSelectionText: {
+    color: '#666666',
+    fontSize: 14,
+    fontStyle: 'italic',
   },
   notesText: {
     color: '#E5E5E5',
