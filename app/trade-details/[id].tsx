@@ -25,6 +25,23 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
+interface Tag {
+  id: string;
+  name: string;
+  color: string;
+  user_id: string;
+  created_at: string;
+}
+
+interface Strategy {
+  id: string;
+  name: string;
+  description: string | null;
+  color: string;
+  user_id: string;
+  created_at: string;
+}
+
 interface Trade {
   id: string;
   symbol: string;
@@ -47,6 +64,9 @@ interface Trade {
   screenshot_url: string | null;
   created_at: string;
   updated_at: string;
+  // Joined data
+  strategy?: Strategy | null;
+  tag_objects?: Tag[] | null;
 }
 
 export default function TradeDetailsScreen() {
@@ -84,33 +104,71 @@ export default function TradeDetailsScreen() {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // First, fetch the trade data
+      const { data: tradeData, error: tradeError } = await supabase
         .from('trades')
         .select('*')
         .eq('id', id)
         .eq('user_id', user.id)
         .single();
 
-      if (error) {
-        console.error('Error fetching trade:', error);
+      if (tradeError) {
+        console.error('Error fetching trade:', tradeError);
         Alert.alert('Error', 'Trade not found');
         router.back();
         return;
       }
 
-      setTrade(data);
+      // Fetch strategy data if strategy_id exists
+      let strategy = null;
+      if (tradeData.strategy_id) {
+        const { data: strategyData, error: strategyError } = await supabase
+          .from('strategies')
+          .select('*')
+          .eq('id', tradeData.strategy_id)
+          .eq('user_id', user.id)
+          .single();
+
+        if (!strategyError && strategyData) {
+          strategy = strategyData;
+        }
+      }
+
+      // Fetch tag data if tags exist
+      let tagObjects = null;
+      if (tradeData.tags && tradeData.tags.length > 0) {
+        const { data: tagsData, error: tagsError } = await supabase
+          .from('tags')
+          .select('*')
+          .in('id', tradeData.tags)
+          .eq('user_id', user.id);
+
+        if (!tagsError && tagsData) {
+          tagObjects = tagsData;
+        }
+      }
+
+      // Combine all data
+      const enrichedTrade = {
+        ...tradeData,
+        strategy,
+        tag_objects: tagObjects
+      };
+
+      setTrade(enrichedTrade);
       
       // Initialize edit data
       setEditData({
-        symbol: data.symbol || '',
-        entry_price: data.entry_price?.toString() || '',
-        exit_price: data.exit_price?.toString() || '',
-        stop_loss: data.stop_loss?.toString() || '',
-        quantity: data.quantity?.toString() || '',
-        commission: data.commission?.toString() || '',
-        notes: data.notes || '',
-        status: data.status || '',
-        pnl: data.pnl || 0,
+        symbol: tradeData.symbol || '',
+        entry_price: tradeData.entry_price?.toString() || '',
+        exit_price: tradeData.exit_price?.toString() || '',
+        stop_loss: tradeData.stop_loss?.toString() || '',
+        quantity: tradeData.quantity?.toString() || '',
+        commission: tradeData.commission?.toString() || '',
+        notes: tradeData.notes || '',
+        status: tradeData.status || '',
+        pnl: tradeData.pnl || 0,
       });
     } catch (error) {
       console.error('Error fetching trade:', error);
@@ -841,14 +899,24 @@ export default function TradeDetailsScreen() {
             </View>
           </View>
 
+          {/* Strategy */}
+          {trade.strategy && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Strategy</Text>
+              <View style={[styles.tag, { backgroundColor: trade.strategy.color }]}>
+                <Text style={styles.tagText}>{trade.strategy.name}</Text>
+              </View>
+            </View>
+          )}
+
           {/* Tags */}
-          {trade.tags && trade.tags.length > 0 && (
+          {trade.tag_objects && trade.tag_objects.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Tags</Text>
               <View style={styles.tagsContainer}>
-                {trade.tags.map((tag, index) => (
-                  <View key={index} style={styles.tag}>
-                    <Text style={styles.tagText}>{tag}</Text>
+                {trade.tag_objects.map((tag) => (
+                  <View key={tag.id} style={[styles.tag, { backgroundColor: tag.color }]}>
+                    <Text style={styles.tagText}>{tag.name}</Text>
                   </View>
                 ))}
               </View>
