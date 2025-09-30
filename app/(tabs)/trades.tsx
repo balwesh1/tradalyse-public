@@ -6,6 +6,7 @@ import {
     ActivityIndicator,
     Alert,
     FlatList,
+    Platform,
     SafeAreaView,
     StyleSheet,
     Text,
@@ -149,35 +150,74 @@ export default function TradesScreen() {
   const handleBulkDelete = async () => {
     if (selectedTrades.length === 0) return;
 
-    Alert.alert(
-      'Delete Trades',
-      `Are you sure you want to delete ${selectedTrades.length} trade(s)?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const { error } = await supabase
-                .from('trades')
-                .delete()
-                .in('id', selectedTrades);
+    console.log('handleBulkDelete called, Platform.OS:', Platform.OS);
+    console.log('Selected trades:', selectedTrades);
 
-              if (error) {
-                Alert.alert('Error', 'Failed to delete trades');
-                return;
-              }
+    // For web, use a simpler confirmation approach
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(
+        `Are you sure you want to delete ${selectedTrades.length} trade(s)?`
+      );
+      
+      if (!confirmed) {
+        console.log('Bulk delete cancelled by user');
+        return;
+      }
 
-              refreshTrades();
-            } catch (error) {
-              console.error('Error deleting trades:', error);
-              Alert.alert('Error', 'Failed to delete trades');
-            }
+      console.log('Proceeding with bulk delete on web...');
+      await performBulkDelete();
+    } else {
+      // For mobile, use Alert.alert
+      Alert.alert(
+        'Delete Trades',
+        `Are you sure you want to delete ${selectedTrades.length} trade(s)?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: performBulkDelete
           }
+        ]
+      );
+    }
+  };
+
+  const performBulkDelete = async () => {
+    try {
+      console.log('performBulkDelete called with trades:', selectedTrades);
+      
+      const { error } = await supabase
+        .from('trades')
+        .delete()
+        .in('id', selectedTrades);
+
+      if (error) {
+        console.error('Supabase delete error:', error);
+        if (Platform.OS === 'web') {
+          window.alert('Failed to delete trades: ' + error.message);
+        } else {
+          Alert.alert('Error', 'Failed to delete trades');
         }
-      ]
-    );
+        return;
+      }
+
+      console.log('Bulk delete successful, refreshing trades...');
+      refreshTrades();
+      
+      if (Platform.OS === 'web') {
+        window.alert(`Successfully deleted ${selectedTrades.length} trade(s)`);
+      } else {
+        Alert.alert('Success', `Successfully deleted ${selectedTrades.length} trade(s)`);
+      }
+    } catch (error) {
+      console.error('Error deleting trades:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Failed to delete trades: ' + (error as Error).message);
+      } else {
+        Alert.alert('Error', 'Failed to delete trades');
+      }
+    }
   };
 
   const handleTradePress = (trade: Trade) => {
