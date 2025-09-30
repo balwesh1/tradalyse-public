@@ -349,25 +349,25 @@ export default function TradeDetailsScreen() {
     if (!trade) return;
 
     try {
-      // Request permissions (skip on web)
-      if (Platform.OS !== 'web') {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('Permission Required', 'Please grant camera roll permissions to upload screenshots.');
-          return;
-        }
+      // For web, directly open file picker
+      if (Platform.OS === 'web') {
+        await pickImage('library');
+        return;
       }
 
-      // Show action sheet
+      // Request permissions for mobile platforms
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant camera roll permissions to upload screenshots.');
+        return;
+      }
+
+      // Show action sheet for mobile platforms
       const options = [
         { text: 'Photo Library', onPress: () => pickImage('library') },
+        { text: 'Camera', onPress: () => pickImage('camera') },
         { text: 'Cancel', style: 'cancel' as const }
       ];
-
-      // Only add camera option on mobile platforms
-      if (Platform.OS !== 'web') {
-        options.unshift({ text: 'Camera', onPress: () => pickImage('camera') });
-      }
 
       Alert.alert(
         'Select Screenshot',
@@ -386,7 +386,13 @@ export default function TradeDetailsScreen() {
     try {
       setUploadingScreenshot(true);
 
-      const options: ImagePicker.ImagePickerOptions = {
+      // For web, use different options
+      const options: ImagePicker.ImagePickerOptions = Platform.OS === 'web' ? {
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false, // Disable editing on web for better compatibility
+        quality: 0.8,
+        base64: false,
+      } : {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [4, 3],
@@ -398,16 +404,15 @@ export default function TradeDetailsScreen() {
       if (source === 'camera') {
         // Skip camera on web
         if (Platform.OS === 'web') {
-          Alert.alert('Not Available', 'Camera is not available on web platform.');
-          return;
+          result = await ImagePicker.launchImageLibraryAsync(options);
+        } else {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert('Permission Required', 'Please grant camera permissions to take photos.');
+            return;
+          }
+          result = await ImagePicker.launchCameraAsync(options);
         }
-        
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('Permission Required', 'Please grant camera permissions to take photos.');
-          return;
-        }
-        result = await ImagePicker.launchCameraAsync(options);
       } else {
         result = await ImagePicker.launchImageLibraryAsync(options);
       }
@@ -417,7 +422,9 @@ export default function TradeDetailsScreen() {
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image');
+      if (Platform.OS !== 'web') {
+        Alert.alert('Error', 'Failed to pick image');
+      }
     } finally {
       setUploadingScreenshot(false);
     }
@@ -439,35 +446,35 @@ export default function TradeDetailsScreen() {
       const fileName = `${trade.id}_${Date.now()}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
 
-      console.log('Uploading screenshot:', {
-        userId: user.id,
-        filePath,
-        fileName,
-        fileExt
-      });
+      let uploadData;
 
-      // Create FormData for React Native file upload
-      const formData = new FormData();
-      formData.append('file', {
-        uri: asset.uri,
-        type: `image/${fileExt}`,
-        name: fileName,
-      } as any);
+      if (Platform.OS === 'web') {
+        // For web, convert blob URI to File object
+        const response = await fetch(asset.uri);
+        const blob = await response.blob();
+        const file = new File([blob], fileName, { type: `image/${fileExt}` });
+        uploadData = file;
+      } else {
+        // For mobile, use FormData
+        const formData = new FormData();
+        formData.append('file', {
+          uri: asset.uri,
+          type: `image/${fileExt}`,
+          name: fileName,
+        } as any);
+        uploadData = formData;
+      }
 
-      // Upload to Supabase storage using FormData
+      // Upload to Supabase storage
       const { error: uploadError } = await supabase.storage
         .from('trade-screenshots')
-        .upload(filePath, formData, {
+        .upload(filePath, uploadData, {
           contentType: `image/${fileExt}`,
           upsert: false
         });
 
       if (uploadError) {
         console.error('Upload error:', uploadError);
-        console.error('Upload error details:', {
-          message: uploadError.message,
-          name: uploadError.name
-        });
         Alert.alert('Error', `Failed to upload screenshot: ${uploadError.message}`);
         return;
       }
@@ -476,8 +483,6 @@ export default function TradeDetailsScreen() {
       const { data: { publicUrl } } = supabase.storage
         .from('trade-screenshots')
         .getPublicUrl(filePath);
-
-      console.log('Upload successful, public URL:', publicUrl);
 
       // Update trade with screenshot URL
       const { error: updateError } = await supabase
