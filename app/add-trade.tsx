@@ -3,18 +3,18 @@ import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 interface Tag {
@@ -338,6 +338,14 @@ export default function AddTradeScreen() {
             <View style={styles.header}>
               <Text style={styles.title}>Add New Trade</Text>
               <Text style={styles.subtitle}>Enter your trade details manually</Text>
+              
+              {/* Auto Import Button */}
+              <TouchableOpacity
+                style={styles.autoImportButton}
+                onPress={() => router.push('/auto-import')}
+              >
+                <Text style={styles.autoImportButtonText}>Auto Import</Text>
+              </TouchableOpacity>
             </View>
 
             {/* Basic Information */}
@@ -770,6 +778,19 @@ const styles = StyleSheet.create({
   subtitle: {
     color: '#CCCCCC',
     fontSize: 16,
+    marginBottom: 16,
+  },
+  autoImportButton: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  autoImportButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   section: {
     backgroundColor: '#1A1A1A',

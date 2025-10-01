@@ -1003,15 +1003,26 @@ export default function HomeScreen() {
       const isToday = new Date().toDateString() === new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day).toDateString();
 
       days.push(
-        <View key={day} style={[styles.calendarDay, isToday && styles.todayDay]}>
-          <Text style={[styles.dayNumber, isToday && styles.todayDayNumber]}>
+        <View 
+          key={day} 
+          style={[
+            styles.calendarDay, 
+            isToday && styles.todayDay,
+            dayPnL && {
+              backgroundColor: dayPnL.pnl >= 0 ? '#10B981' : '#EF4444',
+              borderRadius: 8,
+            }
+          ]}
+        >
+          <Text style={[
+            styles.dayNumber, 
+            isToday && styles.todayDayNumber,
+            dayPnL && { color: '#FFFFFF', fontWeight: 'bold' }
+          ]}>
             {day}
           </Text>
           {dayPnL && (
-            <View style={[
-              styles.pnlIndicator,
-              { backgroundColor: dayPnL.pnl >= 0 ? '#10B981' : '#EF4444' }
-            ]}>
+            <View style={styles.pnlContainer}>
               <Text style={styles.pnlText}>
                 {dayPnL.pnl >= 0 ? '+' : ''}${dayPnL.pnl.toFixed(0)}
               </Text>
@@ -1770,6 +1781,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     borderRadius: 6,
     marginBottom: 6,
+    minHeight: 60,
   },
   todayDay: {
     backgroundColor: '#262626',
@@ -1778,20 +1790,17 @@ const styles = StyleSheet.create({
     color: '#E5E5E5',
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   todayDayNumber: {
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
-  pnlIndicator: {
-    borderRadius: 6,
-    paddingHorizontal: 4,
-    paddingVertical: 3,
-    minHeight: 28,
-    justifyContent: 'center',
+  pnlContainer: {
     alignItems: 'center',
-    width: '95%',
+    justifyContent: 'center',
+    flex: 1,
+    width: '100%',
   },
   pnlText: {
     color: '#FFFFFF',

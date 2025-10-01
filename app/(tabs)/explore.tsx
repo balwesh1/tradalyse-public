@@ -30,6 +30,15 @@ interface Strategy {
   created_at: string;
 }
 
+interface UserSettings {
+  id: string;
+  user_id: string;
+  ib_flex_query_id: string | null;
+  ib_flex_token: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export default function SettingsScreen() {
   const { user } = useAuth();
   const [tags, setTags] = useState<Tag[]>([]);
@@ -46,6 +55,12 @@ export default function SettingsScreen() {
   const [editingStrategy, setEditingStrategy] = useState<Strategy | null>(null);
   const [editStrategyName, setEditStrategyName] = useState('');
   const [editStrategyDescription, setEditStrategyDescription] = useState('');
+  
+  // Interactive Brokers settings
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+  const [ibFlexQueryId, setIbFlexQueryId] = useState('');
+  const [ibFlexToken, setIbFlexToken] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
 
   // Generate random color for new tags
   const generateRandomColor = () => {
@@ -104,14 +119,108 @@ export default function SettingsScreen() {
     }
   }, [user?.id]);
 
+  const fetchUserSettings = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
+        console.error('Error fetching user settings:', error);
+        return;
+      }
+
+      if (data) {
+        setUserSettings(data);
+        setIbFlexQueryId(data.ib_flex_query_id || '');
+        setIbFlexToken(data.ib_flex_token || '');
+      }
+    } catch (error) {
+      console.error('Error in fetchUserSettings:', error);
+    }
+  }, [user?.id]);
+
+  const validateCredentials = (token: string, queryId: string): string | null => {
+    // Validate Flex Token format (20-30 alphanumeric characters)
+    if (token && !/^[a-zA-Z0-9]{20,30}$/.test(token)) {
+      return 'Invalid Flex Token format. Token should be 20-30 alphanumeric characters.';
+    }
+    
+    // Validate Query ID format (6-10 digits)
+    if (queryId && !/^\d{6,10}$/.test(queryId)) {
+      return 'Invalid Query ID format. Query ID should be 6-10 digits.';
+    }
+    
+    return null;
+  };
+
+  const saveUserSettings = async () => {
+    if (!user) return;
+
+    // Validate credentials format
+    const validationError = validateCredentials(ibFlexToken, ibFlexQueryId);
+    if (validationError) {
+      Alert.alert('Invalid Credentials', validationError);
+      return;
+    }
+
+    try {
+      setSavingSettings(true);
+
+      if (userSettings) {
+        // Update existing settings
+        const { error } = await supabase
+          .from('user_settings')
+          .update({
+            ib_flex_query_id: ibFlexQueryId.trim() || null,
+            ib_flex_token: ibFlexToken.trim() || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', user.id);
+
+        if (error) {
+          Alert.alert('Error', 'Failed to update settings');
+          return;
+        }
+      } else {
+        // Create new settings
+        const { error } = await supabase
+          .from('user_settings')
+          .insert({
+            user_id: user.id,
+            ib_flex_query_id: ibFlexQueryId.trim() || null,
+            ib_flex_token: ibFlexToken.trim() || null,
+          });
+
+        if (error) {
+          Alert.alert('Error', 'Failed to save settings');
+          return;
+        }
+      }
+
+      Alert.alert('Success', 'Settings saved successfully');
+      await fetchUserSettings();
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      Alert.alert('Error', 'Failed to save settings');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       fetchTags();
       fetchStrategies();
+      fetchUserSettings();
     } else {
       setLoading(false);
     }
-  }, [user, fetchTags, fetchStrategies]);
+  }, [user, fetchTags, fetchStrategies, fetchUserSettings]);
 
   const handleAddTag = async () => {
     if (!newTagName.trim()) {
@@ -665,6 +774,51 @@ export default function SettingsScreen() {
             </View>
           </View>
 
+          {/* Interactive Brokers Settings */}
+          <View style={styles.settingsCard}>
+            <Text style={styles.cardTitle}>Interactive Brokers Integration</Text>
+            <Text style={styles.settingsDescription}>
+              Configure your Interactive Brokers Flex Query settings for automatic trade import.
+            </Text>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Flex Query ID</Text>
+              <TextInput
+                style={styles.textInput}
+                value={ibFlexQueryId}
+                onChangeText={setIbFlexQueryId}
+                placeholder="Enter your Flex Query ID"
+                placeholderTextColor="#666666"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Flex Token</Text>
+              <TextInput
+                style={styles.textInput}
+                value={ibFlexToken}
+                onChangeText={setIbFlexToken}
+                placeholder="Enter your Flex Token"
+                placeholderTextColor="#666666"
+                autoCapitalize="none"
+                autoCorrect={false}
+                secureTextEntry
+              />
+            </View>
+            
+            <TouchableOpacity
+              style={[styles.saveButton, savingSettings && styles.disabledButton]}
+              onPress={saveUserSettings}
+              disabled={savingSettings}
+            >
+              <Text style={styles.saveButtonText}>
+                {savingSettings ? 'Saving...' : 'Save Settings'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Additional Settings Sections */}
           <View style={styles.settingsCard}>
             <Text style={styles.cardTitle}>Trading Preferences</Text>
@@ -917,6 +1071,41 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     marginTop: 8,
+  },
+  inputGroup: {
+    marginTop: 16,
+  },
+  inputLabel: {
+    color: '#E5E5E5',
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  textInput: {
+    backgroundColor: '#2A2A2A',
+    borderWidth: 1,
+    borderColor: '#444444',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    color: '#E5E5E5',
+    fontSize: 16,
+  },
+  saveButton: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  disabledButton: {
+    backgroundColor: '#666666',
   },
   // Strategies styles
   strategiesCard: {
