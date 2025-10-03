@@ -241,7 +241,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🗺️ Roadmap
 
-- [ ] Advanced charting with more indicators
+- [ ] Auto Trade Sync with Various Brokers
+       - Currently the code for IBKR is not fully functional to auto import
+- [ ] - [ ] Advanced charting with more indicators
 - [ ] Portfolio optimization suggestions
 - [ ] Social trading features
 - [ ] Mobile app store releases
