@@ -2,13 +2,30 @@
   "name": "tradalyse",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "description": "Trading Analytics Dashboard - Track your trades and analyze performance",
+  "keywords": ["trading", "analytics", "portfolio", "finance", "charts", "react-native", "expo"],
+  "author": "Tradalyse Team",
+  "license": "MIT",
+  "homepage": "https://github.com/heavyguidence/Tradalyse-Public#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/heavyguidence/Tradalyse-Public.git"
+  },
+  "bugs": {
+    "url": "https://github.com/heavyguidence/Tradalyse-Public/issues"
+  },
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test": "echo \"No tests specified\" && exit 0",
+    "build:web": "expo export --platform web",
+    "build:android": "eas build --platform android",
+    "build:ios": "eas build --platform ios",
+    "build:all": "eas build --platform all"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
