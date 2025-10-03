@@ -28,8 +28,8 @@ interface ImportedTrade {
   side: string;
   trade_type: string;
   asset_type: string;
-  price: number; // Required field
-  entry_price: number | null;
+  price: number; // Required field (NOT NULL in database)
+  entry_price: number; // Required field (NOT NULL in database)
   exit_price: number | null;
   stop_loss: number | null;
   standard_lot_size: number;
@@ -281,6 +281,10 @@ export default function IBImportScreen() {
 
       const tradesToInsert = importedTrades.map(trade => ({
         ...trade,
+        // Ensure entry_price is not null (required field)
+        entry_price: trade.entry_price || trade.price || 0,
+        // Ensure price is not null (required field)
+        price: trade.price || trade.entry_price || 0,
         user_id: user?.id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
