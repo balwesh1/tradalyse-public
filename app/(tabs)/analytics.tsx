@@ -2,31 +2,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Dimensions,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View
+  ActivityIndicator,
+  Dimensions,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View
 } from 'react-native';
 
-interface Trade {
-  id: string;
-  symbol: string;
-  side: string;
-  trade_type: string;
-  asset_type: string;
-  entry_price: number;
-  exit_price: number | null;
-  standard_lot_size: number;
-  quantity: number;
-  commission: number;
-  pnl: number | null;
-  status: string;
-  entry_date: string;
-  exit_date: string | null;
-}
 
 interface TradeMetrics {
   winPercentage: number;
@@ -37,6 +21,13 @@ interface TradeMetrics {
   avgTradingDaysDuration: string;
   largestProfitableTrade: number;
   largestLosingTrade: number;
+}
+
+interface DayMetrics {
+  avgDailyWinPercentage: number;
+  avgDailyWinLoss: number;
+  largestProfitableDay: number;
+  avgDailyNetPnL: number;
 }
 
 interface MetricCardProps {
@@ -67,6 +58,12 @@ export default function AnalyticsScreen() {
     avgTradingDaysDuration: '0h 0m',
     largestProfitableTrade: 0,
     largestLosingTrade: 0,
+  });
+  const [dayMetrics, setDayMetrics] = useState<DayMetrics>({
+    avgDailyWinPercentage: 0,
+    avgDailyWinLoss: 0,
+    largestProfitableDay: 0,
+    avgDailyNetPnL: 0,
   });
   const [loading, setLoading] = useState(true);
   const [screenWidth, setScreenWidth] = useState(Dimensions.get('window').width);
@@ -187,9 +184,84 @@ export default function AnalyticsScreen() {
     }
   }, [user]);
 
+  const fetchDayMetrics = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { data: trades, error } = await supabase
+        .from('trades')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error fetching trades for day metrics:', error);
+        return;
+      }
+
+      if (!trades || trades.length === 0) {
+        return;
+      }
+
+      // Filter closed trades with valid PnL
+      const closedTrades = trades.filter(trade => 
+        trade.status === 'closed' && trade.pnl !== null && trade.exit_date
+      );
+
+      if (closedTrades.length === 0) {
+        return;
+      }
+
+      // Group trades by exit date to calculate daily PnL
+      const dailyPnL: Record<string, number> = {};
+      
+      closedTrades.forEach(trade => {
+        if (trade.exit_date) {
+          const day = trade.exit_date.split('T')[0]; // Get YYYY-MM-DD
+          dailyPnL[day] = (dailyPnL[day] || 0) + (trade.pnl || 0);
+        }
+      });
+
+      const dailyValues = Object.values(dailyPnL);
+      const tradingDays = Object.keys(dailyPnL).length;
+
+      // Calculate Avg daily win %
+      const profitableDays = dailyValues.filter(dayPnL => dayPnL > 0).length;
+      const avgDailyWinPercentage = tradingDays > 0 ? (profitableDays / tradingDays) * 100 : 0;
+
+      // Calculate Avg daily win/loss
+      const avgProfitableDay = profitableDays > 0 
+        ? dailyValues.filter(dayPnL => dayPnL > 0).reduce((sum, dayPnL) => sum + dayPnL, 0) / profitableDays 
+        : 0;
+      
+      const avgLosingDays = tradingDays - profitableDays;
+      const avgLosingDay = avgLosingDays > 0 
+        ? Math.abs(dailyValues.filter(dayPnL => dayPnL <= 0).reduce((sum, dayPnL) => sum + dayPnL, 0) / avgLosingDays) 
+        : 0;
+      
+      const avgDailyWinLoss = avgLosingDay > 0 ? avgProfitableDay / avgLosingDay : avgProfitableDay;
+
+      // Largest profitable day
+      const largestProfitableDay = dailyValues.length > 0 ? Math.max(...dailyValues.filter(dayPnL => dayPnL > 0), 0) : 0;
+
+      // Avg daily net P&L
+      const totalDailyPnL = dailyValues.reduce((sum, dayPnL) => sum + dayPnL, 0);
+      const avgDailyNetPnL = tradingDays > 0 ? totalDailyPnL / tradingDays : 0;
+
+      setDayMetrics({
+        avgDailyWinPercentage,
+        avgDailyWinLoss,
+        largestProfitableDay,
+        avgDailyNetPnL,
+      });
+    } catch (error) {
+      console.error('Error calculating day metrics:', error);
+    }
+  }, [user]);
+
   useEffect(() => {
     fetchTradeMetrics();
-  }, [fetchTradeMetrics]);
+    fetchDayMetrics();
+  }, [fetchTradeMetrics, fetchDayMetrics]);
 
   const formatCurrency = (value: number): string => {
     return new Intl.NumberFormat('en-US', {
@@ -221,7 +293,7 @@ export default function AnalyticsScreen() {
         <Text style={styles.title}>Analytics Dashboard</Text>
         
         <View style={styles.tradeSection}>
-          <Text style={styles.sectionTitle}>Trade Section</Text>
+          <Text style={styles.sectionTitle}>Trade Metrics</Text>
           
           <View style={[styles.metricsGrid, isSmallDevice && styles.metricsGridSmall]}>
             {isSmallDevice ? (
@@ -242,7 +314,7 @@ export default function AnalyticsScreen() {
                   />
                   <MetricCard
                     title="Avg trade win/loss"
-                    value={Math.round(tradeMetrics.avgTradeWinLoss * 100) / 100}
+                    value={String(Math.round(tradeMetrics.avgTradeWinLoss * 100) / 100)}
                   />
                   <MetricCard
                     title="Trade expectancy"
@@ -289,7 +361,7 @@ export default function AnalyticsScreen() {
                 <View style={styles.metricsColumn}>
                   <MetricCard
                     title="Avg trade win/loss"
-                    value={Math.round(tradeMetrics.avgTradeWinLoss * 100) / 100}
+                    value={String(Math.round(tradeMetrics.avgTradeWinLoss * 100) / 100)}
                   />
                   <MetricCard
                     title="Trade expectancy"
@@ -318,6 +390,60 @@ export default function AnalyticsScreen() {
             )}
           </View>
         </View>
+
+        <View style={styles.daySection}>
+          <Text style={styles.sectionTitle}>Day Metrics</Text>
+          
+          <View style={[styles.dayMetricsGrid, isSmallDevice && styles.dayMetricsGridSmall]}>
+            {isSmallDevice ? (
+              // Two-column layout for small devices (2 columns x 2 rows)
+              <>
+                <View style={styles.dayMetricsColumn}>
+                  <MetricCard
+                    title="Avg daily win %"
+                    value={formatPercentage(dayMetrics.avgDailyWinPercentage)}
+                  />
+                  <MetricCard
+                    title="Avg daily win/loss"
+                    value={String(Math.round(dayMetrics.avgDailyWinLoss * 100) / 100)}
+                  />
+                </View>
+                <View style={styles.dayMetricsColumn}>
+                  <MetricCard
+                    title="Largest profitable day"
+                    value={formatCurrency(dayMetrics.largestProfitableDay)}
+                    valueColor="#10B981"
+                  />
+                  <MetricCard
+                    title="Avg daily net P&L"
+                    value={formatCurrency(dayMetrics.avgDailyNetPnL)}
+                  />
+                </View>
+              </>
+            ) : (
+              // Four-column layout for larger devices
+              <>
+                <MetricCard
+                  title="Avg daily win %"
+                  value={formatPercentage(dayMetrics.avgDailyWinPercentage)}
+                />
+                <MetricCard
+                  title="Avg daily win/loss"
+                  value={String(Math.round(dayMetrics.avgDailyWinLoss * 100) / 100)}
+                />
+                <MetricCard
+                  title="Largest profitable day"
+                  value={formatCurrency(dayMetrics.largestProfitableDay)}
+                  valueColor="#10B981"
+                />
+                <MetricCard
+                  title="Avg daily net P&L"
+                  value={formatCurrency(dayMetrics.avgDailyNetPnL)}
+                />
+              </>
+            )}
+          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -326,7 +452,7 @@ export default function AnalyticsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#000000',
   },
   scrollContainer: {
     paddingHorizontal: 24,
@@ -338,7 +464,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#94A3B8',
+    color: '#CCCCCC',
     marginTop: 12,
     fontSize: 16,
   },
@@ -356,16 +482,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#F8FAFC',
+    color: '#E5E5E5',
     marginBottom: 24,
   },
   tradeSection: {
     marginTop: 24,
   },
+  daySection: {
+    marginTop: 32,
+  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#F8FAFC',
+    color: '#E5E5E5',
     marginBottom: 20,
   },
   metricsGrid: {
@@ -380,23 +509,35 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 20,
   },
+  dayMetricsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 20,
+  },
+  dayMetricsGridSmall: {
+    gap: 16,
+  },
+  dayMetricsColumn: {
+    flex: 1,
+    gap: 20,
+  },
   metricCard: {
-    backgroundColor: '#1E293B',
+    backgroundColor: '#1A1A1A',
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#333333',
     minHeight: 80, // Equal height for all cards
     justifyContent: 'space-between',
   },
   metricTitle: {
-    color: '#94A3B8',
+    color: '#CCCCCC',
     fontSize: 14,
     fontWeight: '500',
     marginBottom: 8,
   },
   metricValue: {
-    color: '#FFFFFF',
+    color: '#E5E5E5',
     fontSize: 18,
     fontWeight: '600',
   },
