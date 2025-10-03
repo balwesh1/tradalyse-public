@@ -196,16 +196,17 @@ const HorizontalBarChart = ({
 };
 
 // Cumulative P&L Area Chart Component
-const CumulativePnLChart = ({ data, width = 300, height = 200 }: {
+const CumulativePnLChart = ({ data, height = 200 }: {
   data: PnLDataPoint[];
-  width?: number;
   height?: number;
 }) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [chartWidth, setChartWidth] = useState(300);
 
-  if (!data || data.length === 0) {
+  var isNotEmpty = data && data.length > 0;
+  if (!isNotEmpty) {
     return (
-      <View style={{ width, height, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ width: '100%', height, justifyContent: 'center', alignItems: 'center' }}>
         <Text style={{ color: '#999999', fontSize: 14 }}>No data available</Text>
       </View>
     );
@@ -214,7 +215,7 @@ const CumulativePnLChart = ({ data, width = 300, height = 200 }: {
   const maxValue = Math.max(...data.map(d => d.cumulativePnL));
   const minValue = Math.min(...data.map(d => d.cumulativePnL));
   const range = maxValue - minValue;
-  const padding = 60; // Increased padding for better label positioning
+  const padding = 45; // Reduced padding for better space utilization
 
   const getY = (value: number) => {
     if (range === 0) return height / 2;
@@ -222,11 +223,18 @@ const CumulativePnLChart = ({ data, width = 300, height = 200 }: {
   };
 
   const getX = (index: number) => {
-    return padding + (index / (data.length - 1)) * (width - 2 * padding);
+    const availableWidth = Math.max(chartWidth - 2 * padding, 100); // Ensure minimum width
+    return padding + (index / (data.length - 1)) * availableWidth;
   };
 
   return (
-    <View style={{ width, height, position: 'relative' }}>
+    <View 
+      style={{ width: '100%', height, position: 'relative' }} 
+      onLayout={(event) => {
+        const { width: measuredWidth } = event.nativeEvent.layout;
+        setChartWidth(measuredWidth);
+      }}
+    >
       {/* Grid lines */}
       <View style={{
         position: 'absolute',
@@ -386,38 +394,54 @@ const CumulativePnLChart = ({ data, width = 300, height = 200 }: {
 };
 
 // Daily P&L Bar Chart Component
-const DailyPnLChart = ({ data, width = 300, height = 200 }: {
+const DailyPnLChart = ({ data, height = 200 }: {
   data: PnLDataPoint[];
-  width?: number;
   height?: number;
 }) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [chartWidth, setChartWidth] = useState(300);
 
   if (!data || data.length === 0) {
     return (
-      <View style={{ width, height, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ width: '100%', height, justifyContent: 'center', alignItems: 'center' }}>
         <Text style={{ color: '#999999', fontSize: 14 }}>No data available</Text>
       </View>
     );
   }
 
-  const maxValue = Math.max(...data.map(d => Math.abs(d.dailyPnL)));
-  const padding = 60; // Increased padding for better label positioning
-  const barWidth = (width - 2 * padding) / data.length;
+  // Calculate proper scale - separate max profit and max loss
+  const maxPositivePnL = Math.max(...data.filter(d => d.dailyPnL > 0).map(d => d.dailyPnL), 0);
+  const maxNegativePnL = Math.abs(Math.min(...data.filter(d => d.dailyPnL < 0).map(d => d.dailyPnL), 0));
+  const maxValue = Math.max(maxPositivePnL, maxNegativePnL);
+  const padding = 45; // Reduced padding for better space utilization
+  const availableWidth = Math.max(chartWidth - 2 * padding, 100); // Ensure minimum width
+  const barWidth = data.length > 0 ? availableWidth / data.length : 0;
+
+  // Chart height calculation with proper scaling
+  const chartHeight = height - 2 * padding;
+  const halfChartHeight = chartHeight / 2;
 
   const getBarHeight = (value: number) => {
     if (maxValue === 0) return 0;
-    return (Math.abs(value) / maxValue) * (height - 2 * padding);
+    // Bars should never exceed maxValue since that's what we display on Y-axis
+    const cappedValue = Math.min(Math.abs(value), maxValue);
+    return (cappedValue / maxValue) * halfChartHeight; // Use half height since center is zero line
   };
 
   const getBarY = (value: number) => {
     const barHeight = getBarHeight(value);
-    const zeroLine = height - padding - (height - 2 * padding) / 2;
-    return value >= 0 ? zeroLine - barHeight : zeroLine;
+    const centerY = height - padding - halfChartHeight; // Zero line at center
+    return value >= 0 ? centerY - barHeight : centerY; // Positive bars go up from center, negative bars go down from center
   };
 
   return (
-    <View style={{ width, height, position: 'relative' }}>
+    <View 
+      style={{ width: '100%', height, position: 'relative' }} 
+      onLayout={(event) => {
+        const { width: measuredWidth } = event.nativeEvent.layout;
+        setChartWidth(measuredWidth);
+      }}
+    >
       {/* Grid lines */}
       <View style={{
         position: 'absolute',
@@ -443,11 +467,11 @@ const DailyPnLChart = ({ data, width = 300, height = 200 }: {
             }}
           />
         ))}
-        {/* Zero line */}
+        {/* Zero line - positioned at center */}
         <View
           style={{
             position: 'absolute',
-            top: (height - 2 * padding) / 2,
+            top: chartHeight / 2, // Place at center
             left: 0,
             right: 0,
             height: 1,
@@ -509,8 +533,8 @@ const DailyPnLChart = ({ data, width = 300, height = 200 }: {
 
       {/* Y-axis labels */}
       <View style={{ position: 'absolute', left: 0, top: padding, bottom: padding, width: padding }}>
-        {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
-          const value = (1 - ratio) * maxValue;
+        {[-maxValue, -maxValue/2, 0, maxValue/2, maxValue].map((value, i) => {
+          const ratio = i * 0.25;
           return (
             <Text
               key={i}
@@ -522,7 +546,7 @@ const DailyPnLChart = ({ data, width = 300, height = 200 }: {
                 fontSize: 10,
               }}
             >
-              ${value.toFixed(0)}
+              ${value >= 0 ? `+${value.toFixed(0)}` : value.toFixed(0)}
             </Text>
           );
         })}
@@ -651,31 +675,36 @@ export default function HomeScreen() {
     if (!user) return;
 
     try {
-      // Get all closed trades from the last 6 months
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-
+      // Get all closed trades with valid P&L (remove time restriction to see all data)
       const { data, error } = await supabase
         .from('trades')
         .select('*')
         .eq('user_id', user.id)
         .eq('status', 'closed')
-        .gte('entry_date', sixMonthsAgo.toISOString())
         .not('pnl', 'is', null)
-        .order('entry_date', { ascending: true });
+        .order('exit_date', { ascending: true });
 
       if (error) {
         console.error('Error fetching P&L chart data:', error);
         return;
       }
 
-      // Group trades by date and calculate daily P&L
+      console.log('Total closed trades found:', data?.length || 0); // Debug log
+
+      // Group trades by exit date and calculate daily P&L
       const dailyData: { [key: string]: number } = {};
       
       (data || []).forEach(trade => {
-        const tradeDate = new Date(trade.entry_date).toISOString().split('T')[0];
+        // Use exit_date for closed trades, fallback to entry_date if exit_date is null
+        const tradeDate = trade.exit_date 
+          ? new Date(trade.exit_date).toISOString().split('T')[0]
+          : new Date(trade.entry_date).toISOString().split('T')[0];
+        
         dailyData[tradeDate] = (dailyData[tradeDate] || 0) + (trade.pnl || 0);
       });
+
+      console.log('Daily P&L data:', dailyData); // Debug log
+      console.log('Unique trading days:', Object.keys(dailyData).length); // Debug log
 
       // Convert to array and calculate cumulative P&L
       const sortedDates = Object.keys(dailyData).sort();
@@ -690,8 +719,10 @@ export default function HomeScreen() {
           dailyPnL,
           cumulativePnL
         });
+        console.log(`Date: ${date}, Daily P&L: ${dailyPnL}, Cumulative: ${cumulativePnL}`); // Debug log
       });
 
+      console.log('Final chart data:', chartData); // Debug log
       setPnLChartData(chartData);
     } catch (error) {
       console.error('Error in fetchPnLChartData:', error);
@@ -1236,7 +1267,7 @@ export default function HomeScreen() {
             styles.responsiveContainer,
             screenWidth > 768 && {
               flexDirection: 'row',
-              gap: 24,
+              gap: 20,
             }
           ]}>
             {/* Daily net cumulative P&L Chart */}
@@ -1254,7 +1285,6 @@ export default function HomeScreen() {
               <View style={styles.chartCard}>
                 <CumulativePnLChart 
                   data={pnlChartData} 
-                  width={screenWidth > 768 ? (screenWidth - 200) / 2 : screenWidth - 140}
                   height={screenWidth > 768 ? 260 : 160}
                 />
               </View>
@@ -1275,7 +1305,6 @@ export default function HomeScreen() {
               <View style={styles.chartCard}>
                 <DailyPnLChart 
                   data={pnlChartData} 
-                  width={screenWidth > 768 ? (screenWidth - 200) / 2 : screenWidth - 140}
                   height={screenWidth > 768 ? 260 : 160}
                 />
               </View>
@@ -1835,7 +1864,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   chartInfoIcon: {
     fontSize: 16,
@@ -1845,7 +1874,7 @@ const styles = StyleSheet.create({
   chartCard: {
     backgroundColor: '#1A1A1A',
     borderRadius: 16,
-    padding: 20,
+    padding: 12,
     borderWidth: 1,
     borderColor: '#333333',
     shadowColor: '#000',

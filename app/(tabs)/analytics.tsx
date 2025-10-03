@@ -162,10 +162,21 @@ export default function AnalyticsScreen() {
         ? Math.max(...winningTrades.map(trade => trade.pnl)) 
         : 0;
 
-      // Largest losing trade
+      // Largest losing trade (most negative PnL = largest loss)
       const largestLosingTrade = losingTrades.length > 0 
-        ? Math.max(...losingTrades.map(trade => trade.pnl)) 
+        ? Math.min(...losingTrades.map(trade => trade.pnl)) 
         : 0;
+
+      // Debug logging for trade analysis
+      console.log('Analytics Debug:', {
+        totalClosedTrades: closedTrades.length,
+        winningTrades: winningTrades.length,
+        losingTrades: losingTrades.length,
+        winningPnlValues: winningTrades.map(t => t.pnl),
+        losingPnlValues: losingTrades.map(t => t.pnl),
+        largestProfitableTrade,
+        largestLosingTrade
+      });
 
       setTradeMetrics({
         winPercentage,
