@@ -16,7 +16,12 @@ A comprehensive trading analytics dashboard built with React Native and Expo, fe
 
 ## 📱 Screenshots
 
-*Add screenshots of your app here*
+<img width="786" height="1278" alt="Home Page" src="https://github.com/user-attachments/assets/8e92e557-ab9f-46ef-a9c3-bfcacf6f6904" />
+<img width="788" height="666" alt="Trade History" src="https://github.com/user-attachments/assets/7bd00bf8-df6d-4007-aa2a-a035c4b19aa3" />
+<img width="1047" height="1205" alt="Trade Details" src="https://github.com/user-attachments/assets/62f879c3-6d2f-4771-bc88-25465946f62f" />
+<img width="1122" height="1283" alt="Profile" src="https://github.com/user-attachments/assets/37ee9c89-d555-408f-8c1f-594c30b00209" />
+<img width="1112" height="832" alt="Settings" src="https://github.com/user-attachments/assets/e1ff37ea-1167-4d59-a339-8d3566d9cd3c" />
+
 
 ## 🛠️ Tech Stack
 
