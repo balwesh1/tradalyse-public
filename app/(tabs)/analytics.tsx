@@ -34,14 +34,16 @@ interface MetricCardProps {
   title: string;
   value: string;
   valueColor?: string;
+  style?: any;
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({ 
   title, 
   value, 
-  valueColor = '#FFFFFF'
+  valueColor = '#FFFFFF',
+  style
 }) => (
-  <View style={styles.metricCard}>
+  <View style={[styles.metricCard, style]}>
     <Text style={styles.metricTitle}>{title}</Text>
     <Text style={[styles.metricValue, { color: valueColor }]}>{value}</Text>
   </View>
@@ -314,28 +316,34 @@ export default function AnalyticsScreen() {
                   <MetricCard
                     title="Win %"
                     value={formatPercentage(tradeMetrics.winPercentage)}
+                    valueColor={tradeMetrics.winPercentage >= 50 ? "#10B981" : "#EF4444"}
                   />
                   <MetricCard
                     title="Longs win %"
                     value={formatPercentage(tradeMetrics.longsWinPercentage)}
+                    valueColor={tradeMetrics.longsWinPercentage >= 50 ? "#10B981" : "#EF4444"}
                   />
                   <MetricCard
                     title="Avg net trade P&L"
                     value={formatCurrency(tradeMetrics.avgNetTradePnL)}
+                    valueColor={tradeMetrics.avgNetTradePnL >= 0 ? "#10B981" : "#EF4444"}
                   />
                   <MetricCard
                     title="Avg trade win/loss"
                     value={String(Math.round(tradeMetrics.avgTradeWinLoss * 100) / 100)}
+                    valueColor={tradeMetrics.avgTradeWinLoss >= 1 ? "#10B981" : tradeMetrics.avgTradeWinLoss > 0.5 ? "#FFB020" : "#EF4444"}
                   />
                   <MetricCard
                     title="Trade expectancy"
                     value={formatCurrency(tradeMetrics.tradeExpectancy)}
+                    valueColor={tradeMetrics.tradeExpectancy >= 0 ? "#10B981" : "#EF4444"}
                   />
                 </View>
                 <View style={styles.metricsColumn}>
                   <MetricCard
                     title="Average trading days duration"
                     value={tradeMetrics.avgTradingDaysDuration}
+                    valueColor="#FFB020"
                   />
                   <MetricCard
                     title="Largest profitable trade"
@@ -357,14 +365,17 @@ export default function AnalyticsScreen() {
                   <MetricCard
                     title="Win %"
                     value={formatPercentage(tradeMetrics.winPercentage)}
+                    valueColor={tradeMetrics.winPercentage >= 50 ? "#10B981" : "#EF4444"}
                   />
                   <MetricCard
                     title="Longs win %"
                     value={formatPercentage(tradeMetrics.longsWinPercentage)}
+                    valueColor={tradeMetrics.longsWinPercentage >= 50 ? "#10B981" : "#EF4444"}
                   />
                   <MetricCard
                     title="Avg net trade P&L"
                     value={formatCurrency(tradeMetrics.avgNetTradePnL)}
+                    valueColor={tradeMetrics.avgNetTradePnL >= 0 ? "#10B981" : "#EF4444"}
                   />
                 </View>
 
@@ -373,16 +384,19 @@ export default function AnalyticsScreen() {
                   <MetricCard
                     title="Avg trade win/loss"
                     value={String(Math.round(tradeMetrics.avgTradeWinLoss * 100) / 100)}
+                    valueColor={tradeMetrics.avgTradeWinLoss >= 1 ? "#10B981" : tradeMetrics.avgTradeWinLoss > 0.5 ? "#FFB020" : "#EF4444"}
                   />
                   <MetricCard
                     title="Trade expectancy"
                     value={formatCurrency(tradeMetrics.tradeExpectancy)}
+                    valueColor={tradeMetrics.tradeExpectancy >= 0 ? "#10B981" : "#EF4444"}
                   />
                   <MetricCard
                     title="Average trading days duration"
                     value={tradeMetrics.avgTradingDaysDuration}
+                    valueColor="#FFB020"
                   />
-                </View>
+              </View>
 
                 {/* Column 3 */}
                 <View style={styles.metricsColumn}>
@@ -413,10 +427,12 @@ export default function AnalyticsScreen() {
                   <MetricCard
                     title="Avg daily win %"
                     value={formatPercentage(dayMetrics.avgDailyWinPercentage)}
+                    valueColor={dayMetrics.avgDailyWinPercentage >= 50 ? "#10B981" : "#EF4444"}
                   />
                   <MetricCard
                     title="Avg daily win/loss"
                     value={String(Math.round(dayMetrics.avgDailyWinLoss * 100) / 100)}
+                    valueColor={dayMetrics.avgDailyWinLoss >= 1 ? "#10B981" : dayMetrics.avgDailyWinLoss > 0.5 ? "#FFB020" : "#EF4444"}
                   />
                 </View>
                 <View style={styles.dayMetricsColumn}>
@@ -428,29 +444,44 @@ export default function AnalyticsScreen() {
                   <MetricCard
                     title="Avg daily net P&L"
                     value={formatCurrency(dayMetrics.avgDailyNetPnL)}
+                    valueColor={dayMetrics.avgDailyNetPnL >= 0 ? "#10B981" : "#EF4444"}
                   />
                 </View>
               </>
             ) : (
-              // Four-column layout for larger devices
+              // Three-column layout for larger devices (3 cards + 1 card centered)
               <>
-                <MetricCard
-                  title="Avg daily win %"
-                  value={formatPercentage(dayMetrics.avgDailyWinPercentage)}
-                />
-                <MetricCard
-                  title="Avg daily win/loss"
-                  value={String(Math.round(dayMetrics.avgDailyWinLoss * 100) / 100)}
-                />
-                <MetricCard
-                  title="Largest profitable day"
-                  value={formatCurrency(dayMetrics.largestProfitableDay)}
-                  valueColor="#10B981"
-                />
-                <MetricCard
-                  title="Avg daily net P&L"
-                  value={formatCurrency(dayMetrics.avgDailyNetPnL)}
-                />
+                {/* Row 1: 3 cards */}
+                <View style={styles.dayMetricsRow}>
+                  <MetricCard
+                    title="Avg daily win %"
+                    value={formatPercentage(dayMetrics.avgDailyWinPercentage)}
+                    valueColor={dayMetrics.avgDailyWinPercentage >= 50 ? "#10B981" : "#EF4444"}
+                    style={styles.flexMetricCard}
+                  />
+                  <MetricCard
+                    title="Avg daily win/loss"
+                    value={String(Math.round(dayMetrics.avgDailyWinLoss * 100) / 100)}
+                    valueColor={dayMetrics.avgDailyWinLoss >= 1 ? "#10B981" : dayMetrics.avgDailyWinLoss > 0.5 ? "#FFB020" : "#EF4444"}
+                    style={styles.flexMetricCard}
+                  />
+                  <MetricCard
+                    title="Largest profitable day"
+                    value={formatCurrency(dayMetrics.largestProfitableDay)}
+                    valueColor="#10B981"
+                    style={styles.flexMetricCard}
+                  />
+                </View>
+                
+                {/* Row 2: 1 centered card */}
+                <View style={styles.dayMetricsRow}>
+                  <MetricCard
+                    title="Avg daily net P&L"
+                    value={formatCurrency(dayMetrics.avgDailyNetPnL)}
+                    valueColor={dayMetrics.avgDailyNetPnL >= 0 ? "#10B981" : "#EF4444"}
+                    style={styles.flexMetricCard}
+                  />
+                </View>
               </>
             )}
           </View>
@@ -521,8 +552,8 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   dayMetricsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
+    width: '100%',
     gap: 20,
   },
   dayMetricsGridSmall: {
@@ -532,6 +563,12 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 20,
   },
+  dayMetricsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 20,
+    width: '100%',
+  },
   metricCard: {
     backgroundColor: '#1A1A1A',
     padding: 16,
@@ -540,6 +577,9 @@ const styles = StyleSheet.create({
     borderColor: '#333333',
     minHeight: 80, // Equal height for all cards
     justifyContent: 'space-between',
+  },
+  flexMetricCard: {
+    flex: 1,
   },
   metricTitle: {
     color: '#CCCCCC',
