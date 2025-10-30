@@ -7,6 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "tradalyse",
     "userInterfaceStyle": "automatic",
+    "platforms": ["ios", "android", "web"],    // <-- AJOUTÉ
     "newArchEnabled": true,
     "description": "Trading Analytics Dashboard - Track your trades and analyze performance",
     "keywords": ["trading", "analytics", "portfolio", "finance", "charts"],
